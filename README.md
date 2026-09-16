@@ -25,8 +25,8 @@ set up, no new character needed.
 
 ## How creatures react
 
-Each creature weighs your mark against its own nerve — its tier, its star level, and how many friends
-are standing next to it.
+Each creature weighs your mark against its own nerve — its tier, its star level, how many friends are
+standing next to it, and anything another mod has done to make it deadlier.
 
 | Reaction | What it does |
 |---|---|
@@ -60,11 +60,12 @@ still lose their nerve. `moo dump` prints what it found, and `Never flee creatur
 an animal has eaten your food it is already being tamed, and from that moment it behaves exactly as it
 does in the base game — so taming works the way you already know, at any mark.
 
-**Cornered creatures fight back, and their kind come with them.** Hit anything and it defends itself for
-a few seconds, however frightened it was — so hunting for meat and hides never turns into a chase. Others of its own kind close enough to hear join
-the fight, so a pack does not stand and watch you battle one of its members. They stay in it for as
-long as they are actually fighting you, and go back to being afraid once they lose track of you. This is tracked per attacker, so your friend picking a fight
-does not make them angry at you.
+**Cornered creatures fight back, and their kind come with them.** Hit anything and it defends itself,
+however frightened it was — so hunting for meat and hides never turns into a chase. Others of its own
+kind close enough to hear join in, so a pack does not stand and watch you battle one of its members.
+They stay in the fight for as long as they are actually fighting you, and go back to being afraid once
+they lose track of you. This is tracked per attacker, so your friend picking a fight does not make them
+angry at you.
 
 ## Multiplayer
 
@@ -97,12 +98,10 @@ A frightened creature's name plate changes: the name is tinted and gains a marke
 | green `<` | cautious — it will not start a fight |
 | green `<<` | afraid — it runs |
 | green `<<<` | terrified — it runs, and cowers when cornered |
-| amber `!` | you hit it, so it is fighting back for a few seconds |
+| amber `!` | you hit it, so it is fighting back |
 
 Green means it is backing away from you and the more arrows the further; amber means it will still
-fight.
-
- The colour says which of the two situations you are in and the marker says how far along, so
+fight. The colour says which of the two situations you are in and the marker says how far along, so
 there is no combination to decode. Both are config strings if you want different ones, and this stays
 clear of vanilla's own meanings for red, orange and yellow.
 
@@ -116,7 +115,7 @@ into it. It is off by default because it widens every name plate, not just frigh
 ## Compatibility
 
 Nothing here is a hard dependency, and every patch is a postfix — this mod never suppresses another
-mod's work or rewrites a game method's body. Two things are worth knowing about.
+mod's work or rewrites a game method's body. A few specifics are worth knowing.
 
 **Mods that change creature AI.** Anything that rewrites how creatures pick or chase targets overlaps
 with what this does, and the result depends on which mod acts last. That is not really avoidable for a
@@ -161,7 +160,7 @@ Type `moo` in the console for a summary. Useful ones:
 - `moo status` — your mark tier, boss credits and most-killed species
 - `moo why` — the full arithmetic for the nearest creature: threat, courage, pack bonus, verdict
 - `moo dump` — print the resolved creature tier table, including modded and Deep North creatures
-- `moo bosses` — print the boss keys this world uses, for filling in the config
+- `moo bosses` — every boss, its rank, and whether this character has killed it
 - `moo optout` — turn your own mark off, so nothing fears you; `moo optin` turns it back on
 - `moo reset` — work your mark out again from scratch, if it ever looks wrong
 - `moo tier <0-8>` — force a mark tier for testing (`moo tier -1` returns to your real one)
@@ -177,9 +176,10 @@ whenever you opt back in. On a shared world it only affects you: other players s
 ## Configuration
 
 Everything is tunable in the config file: the thresholds for each reaction, pack courage, cower
-behaviour, notoriety milestones, per-creature tier overrides, and a fearless list. Creature tiers are
-worked out from the prefabs themselves, so modded creatures get a sensible tier automatically — use
-`moo dump` to see what was guessed and override anything that looks wrong.
+behaviour, notoriety milestones, how far a cry for help carries, per-creature tier overrides, and which
+creatures never flee. Creature tiers are worked out from the prefabs themselves, so modded creatures get
+a sensible tier automatically — use `moo dump` to see what was guessed and override anything that looks
+wrong.
 
 `Inherit world progress` is off by default. Turn it on if you would rather everyone on the server
 benefit from the world's boss kills, the way older fear mods worked.
