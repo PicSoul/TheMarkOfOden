@@ -18,6 +18,8 @@ First release, for Valheim 1.0 (Deep North).
   afraid once they lose you. Hunting never becomes a chase. Food animals never flee at all,
   and taming behaves exactly as it does in the base game.
 - Frightened creatures are marked on their name plate.
+- Any player can turn the mod off for themselves with `moo optout`, and back on with `moo optin`, on a
+  server where everyone else keeps it.
 - Creature tiers, which creatures are hunted for food, and how young creatures relate to adults are all
   worked out from game data, so creatures added by other mods are covered without any configuration.
 - Works alongside Creature Level and Loot Control: creatures it has infused or empowered hold their

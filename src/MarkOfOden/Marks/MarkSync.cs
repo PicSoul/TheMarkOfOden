@@ -44,12 +44,16 @@ namespace MarkOfOden.Marks
 				return;
 			}
 
-			zdo.Set(TierHash, MarkLedger.Tier);
-			zdo.Set(NotorietyHash, EncodeNotoriety());
+			// An opted-out player publishes an empty mark rather than a flag of their own. Every client
+			// already reads a missing mark as "nothing fears this player", which is exactly the wanted
+			// behaviour, so this needs no new key and no agreement between versions about one.
+			int tier = MarkLedger.OptedOut ? 0 : MarkLedger.Tier;
+			zdo.Set(TierHash, tier);
+			zdo.Set(NotorietyHash, MarkLedger.OptedOut ? string.Empty : EncodeNotoriety());
 
 			if (ModConfig.DebugLogging.Value)
 			{
-				Plugin.Log.LogInfo("Published mark: tier " + MarkLedger.Tier + ".");
+				Plugin.Log.LogInfo("Published mark: tier " + tier + (MarkLedger.OptedOut ? " (opted out)" : string.Empty) + ".");
 			}
 		}
 

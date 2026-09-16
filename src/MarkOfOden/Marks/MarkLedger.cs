@@ -19,12 +19,34 @@ namespace MarkOfOden.Marks
 	public static class MarkLedger
 	{
 		private const string CustomDataKey = "MoO.bosses";
+		private const string OptOutKey = "MoO.optout";
 		private const string FormatVersion = "v3";
 
 		private static readonly HashSet<int> BossNumbers = new HashSet<int>();
 
 		/// <summary>Set by the console command to override the ledger for tuning. Negative means inactive.</summary>
 		public static int ForcedTier = -1;
+
+		/// <summary>
+		/// When set, this character publishes no mark at all and nothing fears them.
+		///
+		/// Stored with the character rather than in config so it survives a relog and belongs to the
+		/// player who chose it, not to the machine. It only ever makes them less frightening, so it
+		/// needs no permission to use.
+		/// </summary>
+		public static bool OptedOut { get; private set; }
+
+		public static void SetOptedOut(bool optedOut)
+		{
+			if (OptedOut == optedOut)
+			{
+				return;
+			}
+
+			OptedOut = optedOut;
+			Save();
+			Changed?.Invoke();
+		}
 
 		public static event Action Changed;
 
@@ -161,6 +183,7 @@ namespace MarkOfOden.Marks
 		public static void Load(Player player)
 		{
 			BossNumbers.Clear();
+			OptedOut = false;
 
 			if (player == null || player.m_customData == null)
 			{
@@ -170,6 +193,12 @@ namespace MarkOfOden.Marks
 
 			try
 			{
+				OptedOut = player.m_customData.TryGetValue(OptOutKey, out string optOut) && optOut == "1";
+				if (OptedOut)
+				{
+					Plugin.Log.LogInfo("This character has opted out; nothing will fear them until 'moo optin'.");
+				}
+
 				bool restored = false;
 
 				if (player.m_customData.TryGetValue(CustomDataKey, out string raw) && !string.IsNullOrEmpty(raw))
@@ -280,6 +309,7 @@ namespace MarkOfOden.Marks
 			}
 
 			player.m_customData[CustomDataKey] = builder.ToString();
+			player.m_customData[OptOutKey] = OptedOut ? "1" : "0";
 		}
 	}
 }

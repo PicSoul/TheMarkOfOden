@@ -162,13 +162,17 @@ Type `moo` in the console for a summary. Useful ones:
 - `moo why` — the full arithmetic for the nearest creature: threat, courage, pack bonus, verdict
 - `moo dump` — print the resolved creature tier table, including modded and Deep North creatures
 - `moo bosses` — print the boss keys this world uses, for filling in the config
+- `moo optout` — turn your own mark off, so nothing fears you; `moo optin` turns it back on
 - `moo reset` — work your mark out again from scratch, if it ever looks wrong
 - `moo tier <0-8>` — force a mark tier for testing (`moo tier -1` returns to your real one)
 
 None of these are cheats and none of them need `devcommands`, so using them will not mark your
-character. `moo reset` is open to everyone: it only recalculates your own mark from what your character
-has actually done, and cannot raise it beyond that. `moo tier` can, so on a server it is limited to the
-admin.
+character. `moo optout` and `moo reset` are open to everyone: opting out only makes you less
+frightening, and resetting only recalculates your own mark from what your character has actually done.
+Neither can raise it. `moo tier` can, so on a server it is limited to the admin.
+
+Opting out is remembered by the character, so it survives logging out, and your mark is kept for
+whenever you opt back in. On a shared world it only affects you: other players still get the full mod.
 
 ## Configuration
 

@@ -27,7 +27,7 @@ namespace MarkOfOden
 
 			new Terminal.ConsoleCommand(
 				"moo",
-				"The Mark of Oden. Subcommands: status, why, dump, bosses, reset, tier <0-8>",
+				"The Mark of Oden. Subcommands: status, why, dump, bosses, optout, optin, reset, tier <0-8>",
 				args => Run(args),
 				isCheat: false,
 				isNetwork: false,
@@ -61,13 +61,19 @@ namespace MarkOfOden
 					case "bosses":
 						Report(args.Context, CreatureTiers.DumpBosses());
 						break;
+					case "optout":
+						SetOptedOut(args.Context, true);
+						break;
+					case "optin":
+						SetOptedOut(args.Context, false);
+						break;
 					case "reset":
 						// Not gated: this only ever recalculates your own mark, and cannot raise it
 						// above what the character has actually earned. There is nothing to exploit.
 						Rebuild(args.Context);
 						break;
 					default:
-						args.Context.AddString("Unknown subcommand. Try: status, why, dump, bosses, reset, tier <0-8>");
+						args.Context.AddString("Unknown subcommand. Try: status, why, dump, bosses, optout, optin, reset, tier <0-8>");
 						break;
 				}
 			}
@@ -108,6 +114,34 @@ namespace MarkOfOden
 			return false;
 		}
 
+		/// <summary>
+		/// Turns this character's mark off or back on. Not gated: opting out only ever makes a player
+		/// less frightening, and it is their own character.
+		/// </summary>
+		private static void SetOptedOut(Terminal context, bool optedOut)
+		{
+			if (Player.m_localPlayer == null)
+			{
+				context.AddString("No local player.");
+				return;
+			}
+
+			if (MarkLedger.OptedOut == optedOut)
+			{
+				context.AddString(optedOut ? "Already opted out." : "Already opted in.");
+				return;
+			}
+
+			MarkLedger.SetOptedOut(optedOut);
+			MarkSync.Publish();
+			FearEvaluator.ClearAll();
+			FearDisplay.ClearAll();
+
+			Report(context, optedOut
+				? "Opted out. Nothing will fear you, and your mark is kept for when you opt back in."
+				: "Opted back in. Your mark is tier " + MarkLedger.Tier + " again.");
+		}
+
 		private static void Rebuild(Terminal context)
 		{
 			Player player = Player.m_localPlayer;
@@ -136,7 +170,8 @@ namespace MarkOfOden
 			}
 
 			StringBuilder builder = new StringBuilder();
-			builder.AppendLine("Mark of Oden: " + (ModConfig.Enabled.Value ? "enabled" : "DISABLED"));
+			builder.AppendLine("Mark of Oden: " + (ModConfig.Enabled.Value ? "enabled" : "DISABLED")
+				+ (MarkLedger.OptedOut ? "  - you are OPTED OUT, nothing fears you" : string.Empty));
 			builder.AppendLine("  mark tier: " + MarkLedger.Tier + (MarkLedger.ForcedTier >= 0 ? " (forced)" : string.Empty));
 			builder.AppendLine("  published tier: " + MarkSync.GetTier(player));
 			List<int> bosses = new List<int>(MarkLedger.AllBossNumbers);
