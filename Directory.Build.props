@@ -1,0 +1,40 @@
+<Project>
+
+  <!--
+    Machine-specific paths come from Local.props (gitignored, see Local.props.example),
+    then from environment variables, then from the default Steam location. Nothing here
+    should name a path that only exists on one person's computer.
+  -->
+  <Import Project="Local.props" Condition="Exists('$(MSBuildThisFileDirectory)Local.props')" />
+
+  <PropertyGroup>
+    <ValheimInstall Condition="'$(ValheimInstall)' == ''">$(VALHEIM_INSTALL)</ValheimInstall>
+    <ValheimInstall Condition="'$(ValheimInstall)' == ''">C:\Program Files (x86)\Steam\steamapps\common\Valheim</ValheimInstall>
+    <ValheimManaged>$(ValheimInstall)\valheim_Data\Managed</ValheimManaged>
+
+    <!-- A manual BepInEx install lives inside the game folder; a mod manager keeps it in a profile. -->
+    <BepInExCore Condition="'$(BepInExCore)' == ''">$(BEPINEX_CORE)</BepInExCore>
+    <BepInExCore Condition="'$(BepInExCore)' == ''">$(ValheimInstall)\BepInEx\core</BepInExCore>
+
+    <!-- Optional: when set, the build drops the DLL into that r2modman profile. -->
+    <DeployProfile Condition="'$(DeployProfile)' == ''">$(MARKOFODEN_PROFILE)</DeployProfile>
+    <DeployPluginsDir Condition="'$(DeployProfile)' != ''">$(AppData)\r2modmanPlus-local\Valheim\profiles\$(DeployProfile)\BepInEx\plugins</DeployPluginsDir>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <LangVersion>latest</LangVersion>
+    <Nullable>annotations</Nullable>
+    <!-- The game DLLs are not deterministic builds; silence the noise they generate. -->
+    <NoWarn>$(NoWarn);CS0649;CS0169;MSB3277</NoWarn>
+    <DebugType>portable</DebugType>
+    <GenerateDocumentationFile>false</GenerateDocumentationFile>
+  </PropertyGroup>
+
+  <Target Name="CheckGamePaths" BeforeTargets="ResolveAssemblyReferences">
+    <Error Condition="!Exists('$(ValheimManaged)')"
+           Text="Valheim not found at '$(ValheimManaged)'. Copy Local.props.example to Local.props and set ValheimInstall, or set the VALHEIM_INSTALL environment variable." />
+    <Error Condition="!Exists('$(BepInExCore)\BepInEx.dll')"
+           Text="BepInEx not found at '$(BepInExCore)'. If you use a mod manager, set BepInExCore in Local.props to the profile's BepInEx\core folder." />
+  </Target>
+
+</Project>
