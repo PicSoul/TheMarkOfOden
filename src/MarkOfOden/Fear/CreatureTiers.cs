@@ -64,6 +64,9 @@ namespace MarkOfOden.Fear
 		private static readonly Dictionary<string, string> FactionByToken = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 		private static readonly Dictionary<string, float> HealthByToken = new Dictionary<string, float>(StringComparer.OrdinalIgnoreCase);
 
+		/// <summary>Vanilla behaviour worth seeing in the dump, since both read as a creature changing its mind.</summary>
+		private static readonly Dictionary<string, string> VanillaQuirks = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+
 		/// <summary>Everything that drops food, whatever its tier, so the dump can show what the tier gate excluded.</summary>
 		private static readonly HashSet<string> DropsFood = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 		private static readonly HashSet<string> FearlessTokens = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
@@ -101,6 +104,7 @@ namespace MarkOfOden.Fear
 			HeuristicTiers.Clear();
 			FactionByToken.Clear();
 			HealthByToken.Clear();
+			VanillaQuirks.Clear();
 			DropsFood.Clear();
 			BossTierByKey.Clear();
 			BossKeyByToken.Clear();
@@ -141,6 +145,7 @@ namespace MarkOfOden.Fear
 				FactionByToken[token] = character.m_faction.ToString();
 
 				HealthByToken[token] = character.m_health;
+				RecordVanillaQuirks(prefab, token);
 
 				if (DropsEdible(character))
 				{
@@ -574,7 +579,8 @@ namespace MarkOfOden.Fear
 					+ (FearlessTokens.Contains(pair.Key) ? " FEARLESS" : string.Empty)
 					+ (NeverFleeTokens.Contains(pair.Key) ? " NEVER-FLEES" : string.Empty)
 					+ (AutoNeverFlee.Contains(pair.Key) ? " FOOD" : string.Empty)
-					+ (DropsFood.Contains(pair.Key) && !AutoNeverFlee.Contains(pair.Key) ? " DROPS-FOOD" : string.Empty));
+					+ (DropsFood.Contains(pair.Key) && !AutoNeverFlee.Contains(pair.Key) ? " DROPS-FOOD" : string.Empty)
+					+ (VanillaQuirks.TryGetValue(pair.Key, out string quirks) ? "  [vanilla: " + quirks + "]" : string.Empty));
 			}
 
 			lines.Sort(StringComparer.OrdinalIgnoreCase);
@@ -587,6 +593,39 @@ namespace MarkOfOden.Fear
 			}
 
 			return builder.ToString();
+		}
+
+		/// <summary>
+		/// Notes the two stock behaviours that look like a creature cannot make its mind up.
+		///
+		/// A wounded creature flees only while it was hurt in the last few seconds, with no hysteresis,
+		/// so it returns the moment you stop hitting it and runs again as soon as you land another
+		/// blow. Circling is deliberate pacing rather than indecision, but reads much the same.
+		/// Neither is this mod's doing; both are worth being able to see per creature.
+		/// </summary>
+		private static void RecordVanillaQuirks(GameObject prefab, string token)
+		{
+			MonsterAI ai = prefab.GetComponent<MonsterAI>();
+			if (ai == null)
+			{
+				return;
+			}
+
+			List<string> quirks = new List<string>();
+			if (ai.m_fleeIfLowHealth > 0f)
+			{
+				quirks.Add("flees below " + (ai.m_fleeIfLowHealth * 100f).ToString("0") + "% hp for " + ai.m_fleeTimeSinceHurt.ToString("0") + "s after a hit");
+			}
+
+			if (ai.m_circleTargetInterval > 0f)
+			{
+				quirks.Add("circles at " + ai.m_circleTargetDistance.ToString("0") + "m every " + ai.m_circleTargetInterval.ToString("0") + "s");
+			}
+
+			if (quirks.Count > 0)
+			{
+				VanillaQuirks[token] = string.Join(", ", quirks.ToArray());
+			}
 		}
 
 		/// <summary>Whether any prefab behind this creature name is one the built-in table knows.</summary>
