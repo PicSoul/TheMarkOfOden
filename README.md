@@ -2,9 +2,9 @@
 
 ### Dynamic Enemy Aggression & Fear Evaluation for Valheim
 
-Ever wonder why a puny Greyling thinks it's a good idea to attack a Viking clad in late-game plate
-armor holding a glowing weapon? Or a player that has killed the Meadows boss? The Mark of Oden
-restores common sense to the creatures of the Tenth Realm.
+Ever wonder why a puny Greyling thinks it's a good idea to attack a Viking who has put down Eikthyr,
+the Elder and Bonemass — and four hundred of that Greyling's own kin? The Mark of Oden restores common
+sense to the creatures of the Tenth Realm.
 
 ## What marks you
 
