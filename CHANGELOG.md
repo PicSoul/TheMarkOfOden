@@ -1,8 +1,9 @@
 # Changelog
 
-## 1.0.0
+## 0.1.0
 
-First release, for Valheim 1.0 (Deep North).
+First build, for Valheim 1.0 (Deep North). Everything below works in single player and has been played
+rather than only compiled; multiplayer is what this build exists to test.
 
 - Creatures weigh what you have done against their own nerve, and either ignore you, flee, or break
   entirely. Your mark comes from bosses you personally helped kill and from how many of a species you
