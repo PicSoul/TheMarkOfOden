@@ -68,6 +68,9 @@ namespace MarkOfOden.Patches
 					return;
 				}
 
+				// A creature already in a fight stays in it, rather than timing out mid-swing.
+				FearEvaluator.NoteStillFighting(__instance);
+
 				FearLevel level = FearEvaluator.GetCurrent(__instance, out Player player);
 				if (level < FearLevel.Cautious || player == null)
 				{

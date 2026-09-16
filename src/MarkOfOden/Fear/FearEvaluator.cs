@@ -141,6 +141,30 @@ namespace MarkOfOden.Fear
 			}
 		}
 
+		/// <summary>
+		/// Keeps a creature angry for as long as it is actually fighting that player.
+		///
+		/// The retaliation window counts from the last blow the creature took, and nothing about
+		/// swinging at you resets it, so a creature you stopped hitting would lose interest in the
+		/// middle of its own attack and wander off as though nothing had happened.
+		///
+		/// Refreshing only while it still holds the player as its target hands the decision about when
+		/// a fight is over back to the game, which already gives up when it cannot reach or sense its
+		/// target. Fear resumes from there.
+		/// </summary>
+		public static void NoteStillFighting(MonsterAI ai)
+		{
+			if (ai == null || !ModConfig.CorneredCreaturesFightBack.Value)
+			{
+				return;
+			}
+
+			if (ai.m_targetCreature is Player player && IsRetaliatingAgainst(ai, player))
+			{
+				MarkAngry(ai, player);
+			}
+		}
+
 		/// <summary>True while this creature is still angry at this particular player.</summary>
 		private static bool IsRetaliatingAgainst(MonsterAI ai, Player player)
 		{

@@ -62,8 +62,8 @@ does in the base game — so taming works the way you already know, at any mark.
 
 **Cornered creatures fight back, and their kind come with them.** Hit anything and it defends itself for
 a few seconds, however frightened it was — so hunting for meat and hides never turns into a chase. Others of its own kind close enough to hear join
-the fight, so a pack does not stand and watch you battle one of its members. Everything goes back to
-being afraid once you leave them alone. This is tracked per attacker, so your friend picking a fight
+the fight, so a pack does not stand and watch you battle one of its members. They stay in it for as
+long as they are actually fighting you, and go back to being afraid once they lose track of you. This is tracked per attacker, so your friend picking a fight
 does not make them angry at you.
 
 ## Multiplayer
