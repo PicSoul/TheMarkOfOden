@@ -56,12 +56,10 @@ namespace MarkOfOden
 						}
 						break;
 					case "dump":
-						args.Context.AddString(CreatureTiers.DumpTiers());
-						Plugin.Log.LogInfo(CreatureTiers.DumpTiers());
+						Report(args.Context, CreatureTiers.DumpTiers());
 						break;
 					case "bosses":
-						args.Context.AddString(CreatureTiers.DumpBosses());
-						Plugin.Log.LogInfo(CreatureTiers.DumpBosses());
+						Report(args.Context, CreatureTiers.DumpBosses());
 						break;
 					case "reset":
 						if (RequireAdmin(args.Context))
@@ -91,6 +89,17 @@ namespace MarkOfOden
 		/// Server admin rather than devcommands on purpose: devcommands exists to enable cheats, and
 		/// nothing here is one. Solo or hosting, you are the source of truth and this always passes.
 		/// </summary>
+		/// <summary>
+		/// Prints to the console and to the log both. The log is the copy that survives being read
+		/// later, which matters because these commands exist to explain behaviour someone has just
+		/// seen and wants to show to someone else.
+		/// </summary>
+		private static void Report(Terminal context, string text)
+		{
+			context.AddString(text);
+			Plugin.Log.LogInfo(text);
+		}
+
 		private static bool RequireAdmin(Terminal context)
 		{
 			if (ModConfig.Sync == null || ModConfig.Sync.IsAdmin)
@@ -130,7 +139,7 @@ namespace MarkOfOden
 				builder.AppendLine("    " + top[i].Key + " x" + kills + " (notoriety " + MarkLedger.NotorietyForKills(kills) + ")");
 			}
 
-			context.AddString(builder.ToString());
+			Report(context, builder.ToString());
 		}
 
 		private static void Why(Terminal context)
@@ -170,8 +179,8 @@ namespace MarkOfOden
 				return;
 			}
 
-			string explanation = FearEvaluator.Explain(nearest, player);
-			context.AddString(explanation + "  distance: " + best.ToString("F1") + "m");
+			string explanation = FearEvaluator.Explain(nearest, player) + "  distance: " + best.ToString("F1") + "m";
+			Report(context, explanation);
 		}
 
 		private static void SetTier(Terminal.ConsoleEventArgs args)
