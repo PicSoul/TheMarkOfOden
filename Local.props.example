@@ -26,5 +26,12 @@
     <!-- Optional: build deploys the DLL straight into this profile's plugins folder -->
     <!-- <DeployProfile>Default</DeployProfile> -->
 
+    <!--
+      If you also installed the mod through r2modman, point this at the folder it created,
+      usually Team-ModName. Otherwise you end up with two copies in one profile and BepInEx
+      loads whichever it likes, which makes a rebuilt DLL look like it changed nothing.
+    -->
+    <!-- <DeployFolder>PICS0UL-TheMarkOfOden</DeployFolder> -->
+
   </PropertyGroup>
 </Project>

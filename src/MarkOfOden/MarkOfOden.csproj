@@ -100,11 +100,11 @@
   <Target Name="DeployToProfile" AfterTargets="Build" Condition="'$(DeployPluginsDir)' != ''">
     <Error Condition="!Exists('$(DeployPluginsDir)')"
            Text="DeployProfile '$(DeployProfile)' has no plugins folder at '$(DeployPluginsDir)'." />
-    <MakeDir Directories="$(DeployPluginsDir)\TheMarkOfOden" />
+    <MakeDir Directories="$(DeployPluginsDir)\$(DeployFolder)" />
     <!-- No ContinueOnError: a deploy that silently fails, because the game has the file open,
          leaves an older build in the profile while the build still reports success. -->
-    <Copy SourceFiles="$(TargetPath)" DestinationFolder="$(DeployPluginsDir)\TheMarkOfOden" Retries="3" RetryDelayMilliseconds="500" />
-    <Message Importance="high" Text="Deployed $(TargetFileName) v$(Version) -> $(DeployPluginsDir)\TheMarkOfOden" />
+    <Copy SourceFiles="$(TargetPath)" DestinationFolder="$(DeployPluginsDir)\$(DeployFolder)" Retries="3" RetryDelayMilliseconds="500" />
+    <Message Importance="high" Text="Deployed $(TargetFileName) v$(Version) -> $(DeployPluginsDir)\$(DeployFolder)" />
   </Target>
 
 </Project>
