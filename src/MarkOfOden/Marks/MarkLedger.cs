@@ -134,10 +134,27 @@ namespace MarkOfOden.Marks
 			Changed?.Invoke();
 		}
 
-		public static void Reset()
+		/// <summary>
+		/// Throws away the stored boss credits and works them out again from this character's history.
+		///
+		/// A plain wipe would be a trap: the seeding that recovered a character's past kills only runs
+		/// when there is nothing stored, so wiping would leave the mark at zero until those bosses were
+		/// killed again. Rebuilding gives the same answer a fresh install would, which is what someone
+		/// asking to reset actually wants.
+		/// </summary>
+		public static void Rebuild(Player player)
 		{
 			BossNumbers.Clear();
-			Save();
+
+			if (player != null)
+			{
+				SeedFromHistory(player);
+			}
+			else
+			{
+				Save();
+			}
+
 			Changed?.Invoke();
 		}
 

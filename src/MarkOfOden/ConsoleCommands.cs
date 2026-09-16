@@ -27,7 +27,7 @@ namespace MarkOfOden
 
 			new Terminal.ConsoleCommand(
 				"moo",
-				"The Mark of Oden. Subcommands: status, why, tier <0-8>, dump, bosses, reset",
+				"The Mark of Oden. Subcommands: status, why, dump, bosses, reset, tier <0-8>",
 				args => Run(args),
 				isCheat: false,
 				isNetwork: false,
@@ -62,15 +62,12 @@ namespace MarkOfOden
 						Report(args.Context, CreatureTiers.DumpBosses());
 						break;
 					case "reset":
-						if (RequireAdmin(args.Context))
-						{
-							MarkLedger.ForcedTier = -1;
-							MarkLedger.Reset();
-							args.Context.AddString("Mark ledger wiped. You are nobody again.");
-						}
+						// Not gated: this only ever recalculates your own mark, and cannot raise it
+						// above what the character has actually earned. There is nothing to exploit.
+						Rebuild(args.Context);
 						break;
 					default:
-						args.Context.AddString("Unknown subcommand. Try: status, why, tier <0-8>, dump, bosses, reset");
+						args.Context.AddString("Unknown subcommand. Try: status, why, dump, bosses, reset, tier <0-8>");
 						break;
 				}
 			}
@@ -109,6 +106,24 @@ namespace MarkOfOden
 
 			context.AddString("That changes your mark, so it is limited to the server admin.");
 			return false;
+		}
+
+		private static void Rebuild(Terminal context)
+		{
+			Player player = Player.m_localPlayer;
+			if (player == null)
+			{
+				context.AddString("No local player.");
+				return;
+			}
+
+			int before = MarkLedger.Tier;
+			MarkLedger.ForcedTier = -1;
+			MarkLedger.Rebuild(player);
+			MarkSync.Publish();
+			FearEvaluator.ClearAll();
+
+			Report(context, "Mark rebuilt from this character's history: tier " + before + " -> " + MarkLedger.Tier + ".");
 		}
 
 		private static void Status(Terminal context)

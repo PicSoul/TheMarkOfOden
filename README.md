@@ -162,12 +162,13 @@ Type `moo` in the console for a summary. Useful ones:
 - `moo why` — the full arithmetic for the nearest creature: threat, courage, pack bonus, verdict
 - `moo dump` — print the resolved creature tier table, including modded and Deep North creatures
 - `moo bosses` — print the boss keys this world uses, for filling in the config
+- `moo reset` — work your mark out again from scratch, if it ever looks wrong
 - `moo tier <0-8>` — force a mark tier for testing (`moo tier -1` returns to your real one)
-- `moo reset` — wipe your boss credits
 
 None of these are cheats and none of them need `devcommands`, so using them will not mark your
-character. The last two change your mark, which is what other players' creatures react to, so on a
-server they are limited to the admin.
+character. `moo reset` is open to everyone: it only recalculates your own mark from what your character
+has actually done, and cannot raise it beyond that. `moo tier` can, so on a server it is limited to the
+admin.
 
 ## Configuration
 
