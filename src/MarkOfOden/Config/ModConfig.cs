@@ -50,6 +50,7 @@ namespace MarkOfOden.Config
 		public static ConfigEntry<float> BossFightRadius;
 		public static ConfigEntry<bool> CorneredCreaturesFightBack;
 		public static ConfigEntry<float> RetaliationWindow;
+		public static ConfigEntry<float> HelpCallRadius;
 
 		public static ConfigEntry<bool> EnableCower;
 		public static ConfigEntry<float> CowerRange;
@@ -125,6 +126,9 @@ namespace MarkOfOden.Config
 			CorneredCreaturesFightBack = Bind(SectionFear, "Cornered creatures fight back", true,
 				"A creature you hit defends itself, however frightened it is, instead of having to be chased down. " +
 				"Turn this off and a fleeing creature keeps fleeing while you shoot it in the back.");
+			HelpCallRadius = Bind(SectionFear, "Help call radius", 15f,
+				"When you pick a fight with a creature, others of its own kind within this distance of it join in, rather than standing and watching a battle beside them. " +
+				"Measured from the creature you hit, so shooting one from a distance rallies its packmates and not whatever is near you. Set to 0 to let them ignore it.");
 			RetaliationWindow = Bind(SectionFear, "Retaliation window", 10f,
 				"Seconds a creature stays angry after being hit. Tracked per attacker, so one player's fight does not enrage it at everyone.");
 

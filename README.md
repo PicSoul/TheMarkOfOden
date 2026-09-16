@@ -60,10 +60,11 @@ still lose their nerve. `moo dump` prints what it found, and `Never flee creatur
 an animal has eaten your food it is already being tamed, and from that moment it behaves exactly as it
 does in the base game — so taming works the way you already know, at any mark.
 
-**Cornered creatures fight back.** Hit anything and it defends itself for a few seconds, however
-frightened it was — so hunting for meat and hides never turns into a chase. It goes back to being
-afraid once you leave it alone. This is tracked per attacker, so your friend picking a fight does not
-make it angry at you.
+**Cornered creatures fight back, and their kind come with them.** Hit anything and it defends itself for
+a few seconds, however frightened it was — so hunting for meat and hides never turns into a chase. Others of its own kind close enough to hear join
+the fight, so a pack does not stand and watch you battle one of its members. Everything goes back to
+being afraid once you leave them alone. This is tracked per attacker, so your friend picking a fight
+does not make them angry at you.
 
 ## Multiplayer
 

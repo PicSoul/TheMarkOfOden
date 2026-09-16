@@ -13,7 +13,8 @@ First release, for Valheim 1.0 (Deep North).
   attack the newcomer standing beside him.
 - Creatures in a mob hold their ground; the last one standing breaks. Starred creatures are braver.
 - Raids, boss fights and anything hunting you ignore fear entirely.
-- Anything you hit defends itself, so hunting never becomes a chase. Food animals never flee at all,
+- Anything you hit defends itself, and its own kind nearby join in rather than watching a fight happen
+  beside them. Hunting never becomes a chase. Food animals never flee at all,
   and taming behaves exactly as it does in the base game.
 - Frightened creatures are marked on their name plate.
 - Creature tiers, which creatures are hunted for food, and how young creatures relate to adults are all

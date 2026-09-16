@@ -42,6 +42,10 @@ namespace MarkOfOden.Fear
 		/// <summary>When each player last hurt each creature. Per attacker, so one player's fight is not another's.</summary>
 		private static readonly Dictionary<MonsterAI, Dictionary<Player, float>> LastHurtAt = new Dictionary<MonsterAI, Dictionary<Player, float>>();
 
+		private static readonly Dictionary<MonsterAI, float> NextHelpCall = new Dictionary<MonsterAI, float>();
+
+		private const float HelpCallInterval = 1f;
+
 		/// <summary>Records that a specific player hurt this creature, so it can fight that player back.</summary>
 		public static void NoteHurtByPlayer(MonsterAI ai, Player attacker)
 		{
@@ -50,6 +54,12 @@ namespace MarkOfOden.Fear
 				return;
 			}
 
+			MarkAngry(ai, attacker);
+			CallForHelp(ai, attacker);
+		}
+
+		private static void MarkAngry(MonsterAI ai, Player attacker)
+		{
 			if (!LastHurtAt.TryGetValue(ai, out Dictionary<Player, float> byPlayer))
 			{
 				byPlayer = new Dictionary<Player, float>();
@@ -63,6 +73,71 @@ namespace MarkOfOden.Fear
 			if (Decisions.TryGetValue(ai, out CachedDecision cached))
 			{
 				cached.NextEvaluation = 0f;
+			}
+		}
+
+		/// <summary>
+		/// Brings the neighbours in. A creature that has decided you are too dangerous to provoke will
+		/// still not stand and watch while you fight the one beside it, so anything of its own kind
+		/// close enough to hear joins in on the same terms.
+		///
+		/// Centred on the creature that was hit rather than on the player, so shooting something from
+		/// across a clearing rallies its own packmates rather than whatever happens to be near you.
+		///
+		/// Same faction only: a boar has no stake in a Greydwarf's fight.
+		///
+		/// This runs on whichever client owns the creature that was hit, and marks its neighbours in
+		/// that client's own records. In practice a pack and its victim are near the same player and so
+		/// owned together; a neighbour owned by a different client would not hear the call.
+		/// </summary>
+		private static void CallForHelp(MonsterAI victim, Player attacker)
+		{
+			float radius = ModConfig.HelpCallRadius.Value;
+			if (radius <= 0f || !ModConfig.CorneredCreaturesFightBack.Value)
+			{
+				return;
+			}
+
+			// Combat produces a damage event per hit, so the scan is rate limited per victim rather
+			// than run for every blow. It still refreshes the neighbours while a fight continues.
+			if (NextHelpCall.TryGetValue(victim, out float next) && Time.time < next)
+			{
+				return;
+			}
+
+			NextHelpCall[victim] = Time.time + HelpCallInterval;
+
+			Character hurt = victim.m_character;
+			if (hurt == null)
+			{
+				return;
+			}
+
+			Character.Faction faction = hurt.GetFaction();
+			Vector3 position = hurt.transform.position;
+			float radiusSqr = radius * radius;
+
+			foreach (Character other in Character.GetAllCharacters())
+			{
+				if (other == null || other == hurt || other.IsDead() || other.IsPlayer() || other.IsTamed())
+				{
+					continue;
+				}
+
+				if (other.GetFaction() != faction)
+				{
+					continue;
+				}
+
+				if ((other.transform.position - position).sqrMagnitude > radiusSqr)
+				{
+					continue;
+				}
+
+				if (other.GetBaseAI() is MonsterAI ally)
+				{
+					MarkAngry(ally, attacker);
+				}
 			}
 		}
 
@@ -83,12 +158,14 @@ namespace MarkOfOden.Fear
 
 			Decisions.Remove(ai);
 			LastHurtAt.Remove(ai);
+			NextHelpCall.Remove(ai);
 		}
 
 		public static void ClearAll()
 		{
 			Decisions.Clear();
 			LastHurtAt.Clear();
+			NextHelpCall.Clear();
 		}
 
 		/// <summary>
