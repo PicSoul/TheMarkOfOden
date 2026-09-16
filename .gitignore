@@ -23,3 +23,6 @@ mod_icon.jpg
 Thumbs.db
 desktop.ini
 .DS_Store
+
+# Original pitch notes, kept locally
+idea.txt
