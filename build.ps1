@@ -14,7 +14,7 @@
 param(
     [switch]$Install,
     [switch]$SkipPatchCheck,
-    [string]$Profile = "1.0 Release V0.1"
+    [string]$Profile = "1.0 Release Client Mods"
 )
 
 $ErrorActionPreference = "Stop"
@@ -151,7 +151,7 @@ if ($Install) {
         Fail "Valheim is running; close it before installing"
     }
 
-    $pluginRoot = "$env:APPDATA\r2modmanPlus-local\Valheim\profiles\$Profile\BepInEx\plugins"
+    $pluginRoot = "$env:APPDATA\com.kesomannen.gale\valheim\profiles\$Profile\BepInEx\plugins"
     if (-not (Test-Path $pluginRoot)) { Fail "profile not found: $pluginRoot" }
 
     $target = Get-ChildItem $pluginRoot -Directory | Where-Object { $_.Name -like "*TheMarkOfOden" } | Select-Object -First 1

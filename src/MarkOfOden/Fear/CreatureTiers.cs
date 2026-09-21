@@ -69,6 +69,13 @@ namespace MarkOfOden.Fear
 
 		/// <summary>Everything that drops food, whatever its tier, so the dump can show what the tier gate excluded.</summary>
 		private static readonly HashSet<string> DropsFood = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+		/// <summary>
+		/// Everything that carries an attack. A deer and a lox are both food, but only one of them can
+		/// take the decision out of your hands, and nothing else the tables record tells them apart:
+		/// they share a faction with each other, and tier only says which biome they belong to.
+		/// </summary>
+		private static readonly HashSet<string> ArmedTokens = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 		private static readonly HashSet<string> FearlessTokens = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 		private static readonly HashSet<string> NeverFleeTokens = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 		private static readonly HashSet<string> AutoNeverFlee = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
@@ -106,6 +113,7 @@ namespace MarkOfOden.Fear
 			HealthByToken.Clear();
 			VanillaQuirks.Clear();
 			DropsFood.Clear();
+			ArmedTokens.Clear();
 			BossTierByKey.Clear();
 			BossKeyByToken.Clear();
 			BossNumberByTrophy.Clear();
@@ -154,6 +162,11 @@ namespace MarkOfOden.Fear
 					{
 						AutoNeverFlee.Add(token);
 					}
+				}
+
+				if (IsArmed(prefab))
+				{
+					ArmedTokens.Add(token);
 				}
 				if (!TierByToken.TryGetValue(token, out int existing) || tier > existing)
 				{
@@ -530,6 +543,62 @@ namespace MarkOfOden.Fear
 		/// Read from game data rather than a hand-written list so it covers creatures this mod has
 		/// never heard of, and so it cannot drift out of date when the game adds more.
 		/// </summary>
+		/// <summary>
+		/// Whether a creature has any way to hit you at all. Read from the prefab rather than guessed
+		/// from a name list, so a creature another mod adds is judged by the same rule as a vanilla one.
+		/// A lox has bite and stomp attacks in its default items; a deer's are empty and it has no
+		/// unarmed fallback either, which is why it can only ever run.
+		/// </summary>
+		private static bool IsArmed(GameObject prefab)
+		{
+			Humanoid humanoid = prefab.GetComponent<Humanoid>();
+			if (humanoid == null)
+			{
+				// Not a Humanoid at all, so it has no weapon slots to read. Anything that can attack
+				// in this game is one, so treat the rest as harmless rather than guessing.
+				return false;
+			}
+
+			if (humanoid.m_unarmedWeapon != null)
+			{
+				return true;
+			}
+
+			return HasAny(humanoid.m_defaultItems)
+				|| HasAny(humanoid.m_randomWeapon)
+				|| (humanoid.m_randomItems != null && humanoid.m_randomItems.Length > 0);
+		}
+
+		private static bool HasAny(GameObject[] items)
+		{
+			if (items == null)
+			{
+				return false;
+			}
+
+			foreach (GameObject item in items)
+			{
+				if (item != null)
+				{
+					return true;
+				}
+			}
+
+			return false;
+		}
+
+		/// <summary>Whether this creature has any attack, and so whether leaving it unmarked is a promise.</summary>
+		public static bool IsArmed(Character character)
+		{
+			return character != null && ArmedTokens.Contains(character.m_name);
+		}
+
+		/// <summary>Whether the creature is something a player would kill for food, at any tier.</summary>
+		public static bool IsFoodSource(Character character)
+		{
+			return character != null && DropsFood.Contains(character.m_name);
+		}
+
 		private static bool DropsEdible(Character character)
 		{
 			CharacterDrop drops = character.GetComponent<CharacterDrop>();
@@ -580,6 +649,7 @@ namespace MarkOfOden.Fear
 					+ (NeverFleeTokens.Contains(pair.Key) ? " NEVER-FLEES" : string.Empty)
 					+ (AutoNeverFlee.Contains(pair.Key) ? " FOOD" : string.Empty)
 					+ (DropsFood.Contains(pair.Key) && !AutoNeverFlee.Contains(pair.Key) ? " DROPS-FOOD" : string.Empty)
+					+ (ArmedTokens.Contains(pair.Key) ? " ARMED" : " HARMLESS")
 					+ (VanillaQuirks.TryGetValue(pair.Key, out string quirks) ? "  [vanilla: " + quirks + "]" : string.Empty));
 			}
 

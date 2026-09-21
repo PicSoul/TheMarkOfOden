@@ -1,4 +1,4 @@
-# The Mark of Oden
+﻿# The Mark of Oden
 
 ### Dynamic Enemy Aggression & Fear Evaluation for Valheim
 
@@ -33,7 +33,7 @@ standing next to it, and anything another mod has done to make it deadlier.
 | **Normal** | Vanilla. It has no idea who you are. |
 | **Cautious** | Stops treating you as prey. Won't attack, won't run, just gets on with its day. |
 | **Afraid** | Turns and runs. |
-| **Terrified** | Runs — and when cornered, or when you are right on top of it, stops and cowers. |
+| **Terrified** | Runs — and when cornered, or when you are right on top of it, stops dead and faces you. |
 
 **Raids still come for you.** Creatures spawned by an active raid ignore fear entirely, however
 fearsome you are, so a raid is still a raid. Anything hunting you specifically is likewise undeterred.
@@ -95,15 +95,34 @@ A frightened creature's name plate changes: the name is tinted and gains a marke
 | Plate | Meaning |
 |---|---|
 | unchanged | it has no particular opinion of you |
-| green `<` | cautious — it will not start a fight |
-| green `<<` | afraid — it runs |
-| green `<<<` | terrified — it runs, and cowers when cornered |
-| amber `!` | you hit it, so it is fighting back |
+| green `▼ wary` | it will not start a fight |
+| cyan `▼▼ fleeing` | it runs |
+| pale ice `▼▼▼ panicked` | it runs, and cowers when cornered |
+| amber `▲ cornered` | you hit it, so it is fighting back |
+| amber `▲ unafraid` | your name means nothing to it, and it is armed |
 
-Green means it is backing away from you and the more arrows the further; amber means it will still
-fight. The colour says which of the two situations you are in and the marker says how far along, so
-there is no combination to decode. Both are config strings if you want different ones, and this stays
-clear of vanilla's own meanings for red, orange and yellow.
+There is one scale here, written three times over. The **word** says what the creature is about to do,
+so there is nothing to learn on your first creature. The **arrow** points the way it is about to move:
+down for one putting distance between it and you, up for the one coming at you. The **colour** cools
+and pales as it comes further apart, green to cyan to ice, with the one warm colour reserved for the
+one that will still fight you.
+
+Every state is the same rung on all three, so there is no combination to decode and any one of them is
+enough on its own — which is what makes it readable across a field, in a fight, or without colour
+vision. Once the markers mean something to you, set `Nameplate labels` to `Marker` and the words go
+away. All three are config strings, and the colours stay clear of vanilla's own meanings for red,
+orange and yellow.
+
+An unmarked plate is not the absence of an opinion, it is the opinion "nothing here has changed", and
+that reads as safe. It is safe on a deer, which has no attack and runs from you in the base game
+anyway. It is not safe on a lox, which is equally food and equally unmoved by you and will kill you
+for walking up to it. So a creature that is unafraid *and* armed says `unafraid` rather than nothing.
+By default that covers what you would kill for meat, which is what you approach on purpose; `Mark
+unafraid creatures` widens it to everything that can fight, or turns it off. Creatures with no attack
+at all are never marked, whatever it is set to, so a forest of deer stays quiet.
+
+Whether a creature counts as armed is read from the creature itself rather than a list of names, so
+anything another mod adds is judged by the same rule. `moo tiers` shows it as `ARMED` or `HARMLESS`.
 
 The label is the creature's opinion of you, not a statement that it has noticed you — something that
 has not seen or heard you yet still shows how it would feel.

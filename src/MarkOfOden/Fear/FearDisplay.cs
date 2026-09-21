@@ -9,20 +9,34 @@ namespace MarkOfOden.Fear
 	///
 	/// This asks how the creature feels about <em>you</em>, which is not necessarily the player its AI
 	/// is currently reacting to, so it keeps its own small cache rather than reusing the evaluator's.
-	/// Colour and symbol both carry the meaning, so the state is still legible without colour vision.
+	///
+	/// There is one scale here and it is written three times: the colour, the marker and the word all
+	/// move together, so a plate can be read by whichever of the three you happen to notice first. That
+	/// is not three axes to cross-reference, which would leave unused combinations meaning nothing; it
+	/// is the same rung said three ways, which is what keeps it legible at a distance, without colour
+	/// vision, and on the very first creature you meet.
 	/// </summary>
 	public static class FearDisplay
 	{
-		// One colour for every state where the creature is backing off, and a different one for the
-		// state where it will still fight. Varying colour and marker independently made them look like
-		// two separate axes, which invites the question of what an unused combination would mean.
-		// Vanilla's own meanings are avoided: red is a bad state, orange a value, yellow a keybind.
-		private static readonly string[] DefaultColours = { "#8FC97A", "#8FC97A", "#8FC97A", "#E8A33C" };
+		// Green to cyan to pale ice as a creature comes apart, and one warm colour for the state where
+		// it will still fight. The ramp cools and pales in step with the markers, so the colour answers
+		// "how far gone" on its own and nobody has to count characters at thirty metres. Vanilla's own
+		// meanings are avoided: red is a bad state, orange a value, yellow a keybind.
+		private static readonly string[] DefaultColours = { "#9BD46A", "#5FC9D6", "#B8DCEA", "#E8A33C", "#E8A33C" };
 
 		private const int CorneredState = 3;
+		private const int UnafraidState = 4;
 
-		// The first three repeat one character so the marker alone reads as a scale.
-		private static readonly string[] DefaultSymbols = { "<", "<<", "<<<", "!" };
+		// Direction carries the meaning: down for a creature putting distance between it and you, up
+		// for one coming at you. The first three repeat one character so the marker alone still reads
+		// as a scale. Plain ASCII on purpose, because the name plate's font is not guaranteed to have
+		// a glyph for the arrow characters and a missing one draws as an empty box.
+		private static readonly string[] DefaultSymbols = { "\u25BC", "\u25BC\u25BC", "\u25BC\u25BC\u25BC", "\u25B2", "\u25B2" };
+
+		// What the creature is about to do, not what it feels. "Afraid" is a state of mind and leaves
+		// you to work out the consequence; "fleeing" is the consequence, and is what you are actually
+		// looking at the plate to find out.
+		private static readonly string[] DefaultLabels = { "wary", "fleeing", "panicked", "cornered", "unafraid" };
 
 		private sealed class Cached
 		{
@@ -34,6 +48,7 @@ namespace MarkOfOden.Fear
 
 		private static readonly SplitCache Colours = new SplitCache();
 		private static readonly SplitCache Symbols = new SplitCache();
+		private static readonly SplitCache Labels = new SplitCache();
 
 		/// <summary>Splits a config string once per change, since this runs per creature per frame.</summary>
 		private sealed class SplitCache
@@ -71,8 +86,8 @@ namespace MarkOfOden.Fear
 				return name;
 			}
 
-			string symbol = Entry(Symbols, ModConfig.FearSymbols.Value, state, DefaultSymbols);
-			string marked = name + (symbol.Length > 0 ? " " + symbol : string.Empty);
+			string suffix = Suffix(state);
+			string marked = name + (suffix.Length > 0 ? " " + suffix : string.Empty);
 
 			if (!ModConfig.ColourNames.Value)
 			{
@@ -92,7 +107,9 @@ namespace MarkOfOden.Fear
 		///
 		/// Cornered is its own state rather than being lumped in with normal. A creature fighting back
 		/// because you hit it behaves exactly like an unafraid one, so without marking it an unmarked
-		/// name plate would mean both "does not care about you" and "is angry at you right now".
+		/// name plate would mean both "does not care about you" and "is angry at you right now". It is
+		/// the one state whose marker points the other way, which is what makes it read as the opposite
+		/// thing rather than as a fourth step.
 		/// </summary>
 		private static int Evaluate(Character creature)
 		{
@@ -129,12 +146,78 @@ namespace MarkOfOden.Fear
 			{
 				cached.Level = CorneredState;
 			}
+			else if (MarkAsUnafraid(creature, immunity))
+			{
+				cached.Level = UnafraidState;
+			}
 			else
 			{
 				cached.Level = -1;
 			}
 
 			return cached.Level;
+		}
+
+		/// <summary>
+		/// Whether a creature that is not afraid of you should say so.
+		///
+		/// An unmarked plate is not the absence of a statement, it is the statement "nothing here has
+		/// changed", and a player reads that as safe. That is true of a deer, which has no attack and
+		/// would run from you in the base game anyway. It is badly wrong about a lox, which is equally
+		/// food, equally unafraid, and will kill you for walking up to it. So the two are split by the
+		/// only thing that actually differs: whether the creature can hit back.
+		///
+		/// The mod being off is not a disposition, so a creature is never marked on the strength of it;
+		/// the same goes for tables that have not finished loading, where nothing is known yet.
+		/// </summary>
+		private static bool MarkAsUnafraid(Character creature, FearEvaluator.Immunity immunity)
+		{
+			if (immunity == FearEvaluator.Immunity.Disabled || immunity == FearEvaluator.Immunity.TablesNotReady)
+			{
+				return false;
+			}
+
+			if (!CreatureTiers.IsArmed(creature))
+			{
+				return false;
+			}
+
+			switch (ModConfig.MarkUnafraid.Value)
+			{
+				case UnafraidMarking.Armed:
+					return true;
+
+				case UnafraidMarking.FoodSources:
+					return CreatureTiers.IsFoodSource(creature);
+
+				default:
+					return false;
+			}
+		}
+
+		/// <summary>
+		/// The marker, the word, or both, according to the configured style. Both are joined with a
+		/// single space so the marker reads as a prefix to the word rather than as part of the name.
+		/// </summary>
+		private static string Suffix(int state)
+		{
+			switch (ModConfig.NameplateLabels.Value)
+			{
+				case NameplateStyle.Marker:
+					return Entry(Symbols, ModConfig.FearSymbols.Value, state, DefaultSymbols);
+
+				case NameplateStyle.Word:
+					return Entry(Labels, ModConfig.FearLabels.Value, state, DefaultLabels);
+
+				default:
+					string marker = Entry(Symbols, ModConfig.FearSymbols.Value, state, DefaultSymbols);
+					string word = Entry(Labels, ModConfig.FearLabels.Value, state, DefaultLabels);
+
+					if (marker.Length == 0) { return word; }
+					if (word.Length == 0) { return marker; }
+
+					return marker + " " + word;
+			}
 		}
 
 		/// <summary>Reads one comma separated entry, falling back to the built-in value.</summary>

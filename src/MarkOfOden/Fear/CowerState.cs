@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using MarkOfOden.Config;
 using UnityEngine;
 
@@ -9,7 +9,12 @@ namespace MarkOfOden.Fear
 	/// or the flee pathing has nowhere to go.
 	///
 	/// Vanilla has no cower animation to borrow, so this is built from pieces that do exist: stop dead,
-	/// face the player, refuse to attack, and flinch on a cooldown using the stagger recoil.
+	/// face the player and refuse to attack. Standing rooted and staring is most of what cowering looks
+	/// like, and it costs no animation at all.
+	///
+	/// An optional flinch stands in for cringing by reusing the stagger recoil, but that recoil is the
+	/// animation a creature plays when a blow lands, so it reads as stumbling rather than as fear on
+	/// every creature that has one. It is off by default and kept only because it may suit some.
 	/// </summary>
 	public static class CowerState
 	{
@@ -48,6 +53,12 @@ namespace MarkOfOden.Fear
 		{
 			ai.StopMoving();
 			ai.LookAt(player.transform.position);
+
+			if (ModConfig.CowerStaggerInterval.Value <= 0f)
+			{
+				// Rooted and staring, with no borrowed animation on top of it.
+				return;
+			}
 
 			float interval = Mathf.Max(0.25f, ModConfig.CowerStaggerInterval.Value);
 			if (!NextFlinch.TryGetValue(ai, out float next))

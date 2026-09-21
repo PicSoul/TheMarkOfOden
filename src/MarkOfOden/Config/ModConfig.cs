@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Globalization;
 using BepInEx.Configuration;
@@ -6,6 +6,35 @@ using ServerSync;
 
 namespace MarkOfOden.Config
 {
+	/// <summary>
+	/// Which creatures get told on when they are not afraid of you. An unmarked plate is a statement,
+	/// and on something that can kill you it is the wrong one.
+	/// </summary>
+	public enum UnafraidMarking
+	{
+		/// <summary>Never. An unmarked plate means only that the mod has not changed anything.</summary>
+		Never,
+
+		/// <summary>Only creatures worth killing for food, which are the ones you walk up to on purpose.</summary>
+		FoodSources,
+
+		/// <summary>Everything that can fight back, which is most of the world.</summary>
+		Armed
+	}
+
+	/// <summary>How much of a creature's disposition is spelled out on its name plate.</summary>
+	public enum NameplateStyle
+	{
+		/// <summary>The marker alone. Compact, once you know what the markers mean.</summary>
+		Marker,
+
+		/// <summary>The word alone. Nothing to learn, but wider.</summary>
+		Word,
+
+		/// <summary>Both, so the marker teaches itself while you read the word.</summary>
+		Both
+	}
+
 	/// <summary>
 	/// Every setting the mod exposes. Anything that changes how creatures judge a player is
 	/// server-synced, so a dedicated server stays authoritative and clients cannot tune their own fear.
@@ -28,7 +57,7 @@ namespace MarkOfOden.Config
 		/// file, so a changed default never reaches anyone who has run the mod before; this moves them
 		/// across, but only where they were still on the old default and had not chosen for themselves.
 		/// </summary>
-		private const int CurrentConfigVersion = 1;
+		private const int CurrentConfigVersion = 5;
 
 		public static ConfigEntry<int> ConfigVersion;
 		public static ConfigEntry<bool> Enabled;
@@ -70,7 +99,10 @@ namespace MarkOfOden.Config
 
 		public static ConfigEntry<bool> ShowFearOnNameplate;
 		public static ConfigEntry<bool> ColourNames;
+		public static ConfigEntry<NameplateStyle> NameplateLabels;
+		public static ConfigEntry<UnafraidMarking> MarkUnafraid;
 		public static ConfigEntry<string> FearSymbols;
+		public static ConfigEntry<string> FearLabels;
 		public static ConfigEntry<string> FearColours;
 		public static ConfigEntry<float> NameplateDistance;
 
@@ -133,11 +165,13 @@ namespace MarkOfOden.Config
 				"Seconds a creature stays angry after being hit. Tracked per attacker, so one player's fight does not enrage it at everyone.");
 
 			EnableCower = Bind(SectionCower, "Enable cower", true,
-				"Terrified creatures that cannot escape stop, face you and flinch instead of running into scenery.");
+				"Terrified creatures that cannot escape stop dead and face you instead of running into scenery.");
 			CowerRange = Bind(SectionCower, "Cower range", 4f,
 				"A terrified creature cowers rather than flees when you are this close.");
-			CowerStaggerInterval = Bind(SectionCower, "Cower flinch interval", 2.5f,
-				"Seconds between flinches while cowering. Vanilla has no cower animation, so the stagger recoil stands in for one.");
+			CowerStaggerInterval = Bind(SectionCower, "Cower flinch interval", 0f,
+				"Seconds between flinches while cowering, or 0 for none. The flinch borrows the stagger recoil, because vanilla has no cower animation, but that recoil " +
+				"is what a creature plays when a blow lands: it reads as stumbling rather than cringing, and it does so on every creature, not just the small ones. " +
+				"Standing rooted and staring at you is the better half of cowering anyway, so the flinch is off unless you want it.");
 
 			NotorietyThresholds = Bind(SectionMark, "Notoriety thresholds", "25,100,400",
 				"Personal kill counts of a single species at which that species starts to recognise you. Each step adds 1 to your threat against that species only. " +
@@ -177,12 +211,27 @@ namespace MarkOfOden.Config
 			ColourNames = Bind(SectionDisplay, "Colour names", true,
 				"Tint the creature's name as well as marking it. Turn this off to show only the marker and leave the name's colour to the game or to another mod. " +
 				"BetterUI's custom alerted status already colours names by alert state, and a marker on its own combines with that rather than overriding it.");
-			FearSymbols = Bind(SectionDisplay, "Fear markers", "<,<<,<<<,!",
-				"Markers for cautious, afraid, terrified and cornered, in that order. The first three repeat one character on purpose, so the marker alone " +
-				"reads as a scale; cornered uses a different one because it is a different kind of thing, not a fourth step. Leave an entry empty for colour only.");
-			FearColours = Bind(SectionDisplay, "Fear marker colours", "#8FC97A,#8FC97A,#8FC97A,#E8A33C",
-				"Colours for those four markers. The three backing-off states share one colour so the marker carries the degree on its own; only the cornered " +
-				"state differs, because it is the one that will still fight you. Avoids vanilla's meanings: red is a bad state, orange a value, yellow a keybind.");
+			NameplateLabels = Bind(SectionDisplay, "Nameplate labels", NameplateStyle.Both,
+				"Whether a name plate carries the marker, the word, or both. Both is the default because the word needs no explaining and the marker sits next to it " +
+				"until you have learned it; switch to Marker once you have, for shorter plates.");
+			MarkUnafraid = Bind(SectionDisplay, "Mark unafraid creatures", UnafraidMarking.FoodSources,
+				"Which creatures are marked when your name means nothing to them. Leaving a plate unmarked reads as 'this one is no trouble', which is true of a deer and " +
+				"badly wrong about a lox, so anything that can actually fight is worth saying out loud. FoodSources marks only what you would kill for meat, which is what " +
+				"you walk up to on purpose and where the mistake costs most; Armed marks everything with an attack, which is accurate but lights up most of the world; " +
+				"Never restores the older behaviour. Creatures with no attack at all, like deer and hare, are never marked under any of these.");
+			FearSymbols = Bind(SectionDisplay, "Fear markers", "\u25BC,\u25BC\u25BC,\u25BC\u25BC\u25BC,\u25B2,\u25B2",
+				"Markers for cautious, afraid, terrified, cornered and unafraid, in that order. Down means the creature is putting distance between it and you and up " +
+				"means it is not, so direction alone says which way this is about to go; the first three repeat one character so the marker also reads as a scale. " +
+				"If your font cannot draw the triangles they will come out as empty boxes, in which case v,vv,vvv,^,^ says the same thing in plain ASCII. " +
+				"Leave an entry empty for colour only.");
+			FearLabels = Bind(SectionDisplay, "Fear words", "wary,fleeing,panicked,cornered,unafraid",
+				"Words for cautious, afraid, terrified, cornered and unafraid, in that order. They name what the creature is about to do rather than what it feels, because " +
+				"that is the part you can act on. Cornered and unafraid share a colour and a marker because they amount to the same thing for you; only the word separates " +
+				"the one that is angry from the one that never cared. Leave an entry empty to show nothing but the marker for that one state.");
+			FearColours = Bind(SectionDisplay, "Fear colours", "#9BD46A,#5FC9D6,#B8DCEA,#E8A33C,#E8A33C",
+				"Colours for those five states. The three fleeing ones run green to cyan to pale ice, so the colour says how far gone a creature is without counting " +
+				"markers; the last two share the one warm colour, because they are the two that will fight you. Every state is the same rung on all three scales at once, " +
+				"so there is no combination to decode, and any one of colour, marker or word is enough on its own.");
 			NameplateDistance = Bind(SectionDisplay, "Nameplate distance", 0f,
 				"Vanilla only shows name plates within 10m, which is late to learn that something is afraid of you. " +
 				"Set a larger distance to see them further out, or 0 to leave the game's own value alone. Affects all name plates, not just frightened ones.");
@@ -209,6 +258,23 @@ namespace MarkOfOden.Config
 			// are not detected automatically and have to be listed.
 			MoveDefault(NeverFleeCreatures, "", "$enemy_moose, $enemy_seal");
 
+			// Markers used to point sideways, which said how strongly a creature felt but not which
+			// way it was about to move.
+			MoveDefault(FearSymbols, "<,<<,<<<,!", "v,vv,vvv,^");
+
+			// The three fleeing states used to share one colour, which left the colour saying only
+			// whether a creature would fight and the marker carrying the whole scale by itself.
+			MoveDefault(FearColours, "#8FC97A,#8FC97A,#8FC97A,#E8A33C", "#9BD46A,#5FC9D6,#B8DCEA,#E8A33C");
+
+			// A fifth state joined the four, and the markers moved to triangles now that the name
+			// plate font has been seen to draw them.
+			MoveDefault(FearSymbols, "v,vv,vvv,^", "\u25BC,\u25BC\u25BC,\u25BC\u25BC\u25BC,\u25B2,\u25B2");
+			MoveDefault(FearLabels, "wary,fleeing,panicked,cornered", "wary,fleeing,panicked,cornered,unafraid");
+			MoveDefault(FearColours, "#9BD46A,#5FC9D6,#B8DCEA,#E8A33C", "#9BD46A,#5FC9D6,#B8DCEA,#E8A33C,#E8A33C");
+
+			// The cower flinch reused the stagger recoil, which is the hurt animation and looks it.
+			MoveDefaultValue(CowerStaggerInterval, 2.5f, 0f);
+
 			ConfigVersion.Value = CurrentConfigVersion;
 			Plugin.Log.LogInfo("Config brought up to date from version " + from + " to " + CurrentConfigVersion + ".");
 		}
@@ -220,6 +286,21 @@ namespace MarkOfOden.Config
 		private static void MoveDefault(ConfigEntry<string> entry, string oldDefault, string newDefault)
 		{
 			if (entry == null || !string.Equals(entry.Value?.Trim(), oldDefault, StringComparison.Ordinal))
+			{
+				return;
+			}
+
+			entry.Value = newDefault;
+			Plugin.Log.LogInfo("Updated '" + entry.Definition.Key + "' to its new default.");
+		}
+
+		/// <summary>
+		/// The same as <see cref="MoveDefault"/> for settings that are not strings, where there is no
+		/// trimming to do and an exact match is the only sensible test.
+		/// </summary>
+		private static void MoveDefaultValue<T>(ConfigEntry<T> entry, T oldDefault, T newDefault)
+		{
+			if (entry == null || !EqualityComparer<T>.Default.Equals(entry.Value, oldDefault))
 			{
 				return;
 			}
