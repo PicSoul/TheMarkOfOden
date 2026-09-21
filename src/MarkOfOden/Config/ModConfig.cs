@@ -59,6 +59,16 @@ namespace MarkOfOden.Config
 		/// </summary>
 		private const int CurrentConfigVersion = 5;
 
+		/// <summary>
+		/// Whether the synced settings are enforced on clients, or merely handed to them.
+		///
+		/// Synchronising a value and enforcing it are two different things. Without this, the
+		/// server hands its values over on connect and a client may still edit them afterwards,
+		/// which suits a server among friends. Turning it on makes them read-only for everyone
+		/// but an admin, which is what a public server wants.
+		/// </summary>
+		public static ConfigEntry<bool> LockServerSettings;
+
 		public static ConfigEntry<int> ConfigVersion;
 		public static ConfigEntry<bool> Enabled;
 
@@ -114,6 +124,11 @@ namespace MarkOfOden.Config
 		{
 			_file = file;
 			_sync = sync;
+
+			LockServerSettings = Bind(SectionGeneral, "Lock settings to the server", false,
+				"Enforce the server's values rather than only handing them out on connect. Off means a client may still change them afterwards; on makes every " +
+				"synced setting read-only for anyone who is not an admin. Ignored in single player and on a server without this mod.");
+			_sync.AddLockingConfigEntry(LockServerSettings);
 
 			ConfigVersion = _file.Bind(SectionGeneral, "Config version", 0,
 				new ConfigDescription("Which set of defaults this file was last brought up to date with. Managed by the mod; there is no reason to edit it."));
