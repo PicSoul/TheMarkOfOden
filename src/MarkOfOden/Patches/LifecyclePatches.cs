@@ -170,16 +170,20 @@ namespace MarkOfOden.Patches
 				if (bossNumber > 0)
 				{
 					MarkLedger.CreditBoss(bossNumber);
+					ProgressPopup.ShowBossDefeated(bossNumber, MarkLedger.Tier);
 					return;
 				}
 
 				// Species kills are counted by the game itself, in the same call that got us here.
 				// All this has to do is republish when the count crosses a notoriety threshold.
 				int kills = VanillaKillStats.KillsOf(enemyName);
-				if (MarkLedger.NotorietyForKills(kills) != MarkLedger.NotorietyForKills(kills - 1))
+				int oldNotoriety = MarkLedger.NotorietyForKills(kills - 1);
+				int newNotoriety = MarkLedger.NotorietyForKills(kills);
+				if (newNotoriety > oldNotoriety)
 				{
 					Plugin.Log.LogInfo(enemyName + " has learned to fear you (" + kills + " killed).");
 					MarkSync.Publish();
+					ProgressPopup.ShowNotorietyIncreased(enemyName, newNotoriety, kills);
 				}
 			}
 			catch (Exception e)

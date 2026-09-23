@@ -2,6 +2,7 @@ using System;
 using HarmonyLib;
 using MarkOfOden.Config;
 using MarkOfOden.Fear;
+using UnityEngine;
 
 namespace MarkOfOden.Patches
 {
@@ -63,6 +64,107 @@ namespace MarkOfOden.Patches
 			if (distance > 0f)
 			{
 				hud.m_maxShowDistance = distance;
+			}
+		}
+	}
+
+	[HarmonyPatch(typeof(Hud), "Awake")]
+	public static class Hud_Awake_Patch
+	{
+		private static void Postfix()
+		{
+			try
+			{
+				ProgressPopup.EnsureCreated();
+			}
+			catch (Exception e)
+			{
+				Plugin.Log.LogError("Hud.Awake postfix failed: " + e);
+			}
+		}
+	}
+
+	/// <summary>
+	/// Keeps the cursor unlocked and visible while the Standings panel is open.
+	/// </summary>
+	[HarmonyPatch(typeof(GameCamera), "UpdateMouseCapture")]
+	public static class GameCamera_UpdateMouseCapture_Patch
+	{
+		private static bool Prefix()
+		{
+			if (StandingsPanel.IsOpen)
+			{
+				Cursor.lockState = CursorLockMode.None;
+				Cursor.visible = true;
+				ZCursor.LockState = CursorLockMode.None;
+				ZCursor.Show();
+				return false;
+			}
+			return true;
+		}
+	}
+
+	/// <summary>
+	/// Freezes character look and movement while navigating the Standings panel.
+	/// </summary>
+	[HarmonyPatch(typeof(PlayerController), "TakeInput")]
+	public static class PlayerController_TakeInput_Patch
+	{
+		private static void Postfix(ref bool __result)
+		{
+			if (StandingsPanel.IsOpen)
+			{
+				__result = false;
+			}
+		}
+	}
+
+	/// <summary>
+	/// Prevents player actions (attacks, building, interactions) while navigating the Standings panel.
+	/// </summary>
+	[HarmonyPatch(typeof(Player), "TakeInput")]
+	public static class Player_TakeInput_Patch
+	{
+		private static void Postfix(ref bool __result)
+		{
+			if (StandingsPanel.IsOpen)
+			{
+				__result = false;
+			}
+		}
+	}
+
+	/// <summary>
+	/// Closes the Standings panel on Escape without popping open the Valheim pause menu.
+	/// </summary>
+	[HarmonyPatch(typeof(Menu), "Update")]
+	public static class Menu_Update_Patch
+	{
+		private static bool Prefix()
+		{
+			if (StandingsPanel.IsOpen || StandingsPanel.ClosedThisFrame)
+			{
+				if (StandingsPanel.IsOpen && ZInput.GetKeyDown(KeyCode.Escape, true))
+				{
+					StandingsPanel.Close();
+				}
+				return false;
+			}
+			return true;
+		}
+	}
+
+	/// <summary>
+	/// Suppresses camera zoom and hotbar wheel scrolling while the Standings panel is open.
+	/// </summary>
+	[HarmonyPatch(typeof(ZInput), nameof(ZInput.GetMouseScrollWheel))]
+	public static class ZInput_GetMouseScrollWheel_Patch
+	{
+		private static void Postfix(ref float __result)
+		{
+			if (StandingsPanel.IsOpen || StandingsPanel.ClosedThisFrame)
+			{
+				__result = 0f;
 			}
 		}
 	}

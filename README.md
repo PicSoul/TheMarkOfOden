@@ -1,4 +1,4 @@
-﻿# The Mark of Oden
+# The Mark of Oden
 
 ### Dynamic Enemy Aggression & Fear Evaluation for Valheim
 
@@ -130,6 +130,18 @@ has not seen or heard you yet still shows how it would feel.
 Vanilla only draws name plates within 10m, which is late to learn that something is afraid of you.
 `Nameplate distance` in the config raises that if you want to read the mood of a forest before walking
 into it. It is off by default because it widens every name plate, not just frightened ones.
+
+## In-Game Standings & Stats Viewer
+
+Check your progress, boss statuses, and species fear standing at any time:
+- **Hotkey**: Press **`F4`** (configurable) to toggle the Standings & Lore panel.
+- **Inventory Button**: Click the **"Mark of Oden"** button embedded directly in your inventory screen.
+- **Strict Spoiler Protection**: Only biomes your character has personally explored are visible. Unvisited biomes, future bosses, and undiscovered creatures remain concealed to preserve discovery.
+- **Live Metrics**: Shows your current Mark tier, lifetime kills per species, notoriety progress, and live fear dispositions (`Wary`, `Fleeing`, `Panicked`, `Unafraid`, or `Harmless`).
+
+## Progression Notification Popups
+
+Whenever you slay a boss or reach a species notoriety threshold (e.g. 25, 100, 400 kills), an animated Norse HUD banner appears displaying the trophy artwork, new fear reactions, and an authentic fanfare cue.
 
 ## Compatibility
 

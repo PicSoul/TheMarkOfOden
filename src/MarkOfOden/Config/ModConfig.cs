@@ -1,8 +1,9 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Globalization;
 using BepInEx.Configuration;
 using ServerSync;
+using UnityEngine;
 
 namespace MarkOfOden.Config
 {
@@ -47,6 +48,8 @@ namespace MarkOfOden.Config
 		private const string SectionMark = "4 - The Mark";
 		private const string SectionTables = "5 - Creature tables";
 		private const string SectionDisplay = "6 - Display";
+		private const string SectionPopups = "7 - Popups";
+		private const string SectionStandings = "8 - Standings";
 		private const string SectionDebug = "9 - Debug";
 
 		private static ConfigFile _file;
@@ -115,6 +118,13 @@ namespace MarkOfOden.Config
 		public static ConfigEntry<string> FearLabels;
 		public static ConfigEntry<string> FearColours;
 		public static ConfigEntry<float> NameplateDistance;
+
+		public static ConfigEntry<bool> EnableProgressionPopups;
+		public static ConfigEntry<float> PopupDisplayDuration;
+		public static ConfigEntry<bool> EnablePopupAudio;
+
+		public static ConfigEntry<KeyboardShortcut> StandingsKey;
+		public static ConfigEntry<bool> ShowStandingsInventoryButton;
 
 		public static ConfigEntry<bool> DebugLogging;
 
@@ -251,6 +261,18 @@ namespace MarkOfOden.Config
 				"Vanilla only shows name plates within 10m, which is late to learn that something is afraid of you. " +
 				"Set a larger distance to see them further out, or 0 to leave the game's own value alone. Affects all name plates, not just frightened ones.");
 
+			EnableProgressionPopups = BindClient(SectionPopups, "Enable progression popups", true,
+				"Display an in-game HUD popup notification banner when defeating a boss or crossing a species notoriety threshold.");
+			PopupDisplayDuration = BindClient(SectionPopups, "Popup display duration", 4.0f,
+				"Seconds the progression banner remains visible before smoothly fading away.");
+			EnablePopupAudio = BindClient(SectionPopups, "Enable popup audio", true,
+				"Play uplifting sound effects when a progression or notoriety banner appears.");
+
+			StandingsKey = BindClient(SectionStandings, "Standings toggle key", new KeyboardShortcut(KeyCode.F4),
+				"Key to open the in-game Standings & Stats window.");
+			ShowStandingsInventoryButton = BindClient(SectionStandings, "Show inventory button", true,
+				"Display a clickable button in the Inventory/Compendium screen to open the Standings & Stats window.");
+
 			DebugLogging = Bind(SectionDebug, "Debug logging", false,
 				"Verbose logging of fear decisions. Noisy; prefer the console command 'moo why' for one-off checks.");
 
@@ -329,6 +351,14 @@ namespace MarkOfOden.Config
 			ConfigEntry<T> entry = _file.Bind(section, key, defaultValue, new ConfigDescription(description));
 			SyncedConfigEntry<T> synced = _sync.AddConfigEntry(entry);
 			synced.SynchronizedConfig = true;
+			return entry;
+		}
+
+		private static ConfigEntry<T> BindClient<T>(string section, string key, T defaultValue, string description)
+		{
+			ConfigEntry<T> entry = _file.Bind(section, key, defaultValue, new ConfigDescription(description));
+			SyncedConfigEntry<T> synced = _sync.AddConfigEntry(entry);
+			synced.SynchronizedConfig = false;
 			return entry;
 		}
 

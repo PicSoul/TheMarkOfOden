@@ -60,6 +60,7 @@ namespace MarkOfOden.Fear
 
 		private static readonly Dictionary<string, int> TierByToken = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
 		private static readonly Dictionary<string, string> TokenByPrefab = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+		private static readonly Dictionary<string, string> PrefabByToken = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 		private static readonly Dictionary<string, int> HeuristicTiers = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
 		private static readonly Dictionary<string, string> FactionByToken = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 		private static readonly Dictionary<string, float> HealthByToken = new Dictionary<string, float>(StringComparer.OrdinalIgnoreCase);
@@ -108,6 +109,7 @@ namespace MarkOfOden.Fear
 			TierByPrefabHash.Clear();
 			TierByToken.Clear();
 			TokenByPrefab.Clear();
+			PrefabByToken.Clear();
 			HeuristicTiers.Clear();
 			FactionByToken.Clear();
 			HealthByToken.Clear();
@@ -140,6 +142,10 @@ namespace MarkOfOden.Fear
 
 				string token = character.m_name;
 				TokenByPrefab[prefab.name] = token;
+				if (!PrefabByToken.ContainsKey(token) || VanillaTiers.ContainsKey(prefab.name))
+				{
+					PrefabByToken[token] = prefab.name;
+				}
 
 				if (character.IsBoss())
 				{
@@ -168,7 +174,14 @@ namespace MarkOfOden.Fear
 				{
 					ArmedTokens.Add(token);
 				}
-				if (!TierByToken.TryGetValue(token, out int existing) || tier > existing)
+
+				// Standard vanilla creatures define the canonical base tier for their species token.
+				// Variants and reskins must not inflate the base species courage.
+				if (VanillaTiers.ContainsKey(prefab.name))
+				{
+					TierByToken[token] = tier;
+				}
+				else if (!TierByToken.ContainsKey(token))
 				{
 					TierByToken[token] = tier;
 				}
@@ -472,6 +485,27 @@ namespace MarkOfOden.Fear
 				return byPrefab;
 			}
 
+			// Prefab asset in ZNetScene or un-networked instance: inspect gameObject name directly
+			string prefabName = character.gameObject != null ? character.gameObject.name : null;
+			if (!string.IsNullOrEmpty(prefabName))
+			{
+				int cloneIdx = prefabName.IndexOf("(Clone)", StringComparison.OrdinalIgnoreCase);
+				if (cloneIdx >= 0)
+				{
+					prefabName = prefabName.Substring(0, cloneIdx);
+				}
+
+				if (TierByPrefabHash.TryGetValue(prefabName.GetStableHashCode(), out int byHash))
+				{
+					return byHash;
+				}
+
+				if (VanillaTiers.TryGetValue(prefabName, out int byVanilla))
+				{
+					return byVanilla;
+				}
+			}
+
 			if (!string.IsNullOrEmpty(character.m_name) && TierByToken.TryGetValue(character.m_name, out int byToken))
 			{
 				return byToken;
@@ -480,6 +514,88 @@ namespace MarkOfOden.Fear
 			// An unknown creature is treated as top tier, so a mod this one has never seen
 			// errs towards vanilla behaviour rather than towards everything fleeing.
 			return MaxTier;
+		}
+
+		/// <summary>Returns the localization token for a prefab name, e.g. "Greydwarf" -> "$enemy_greydwarf".</summary>
+		public static string GetTokenForPrefab(string prefabName)
+		{
+			if (string.IsNullOrEmpty(prefabName)) return null;
+			return TokenByPrefab.TryGetValue(prefabName, out string token) ? token : null;
+		}
+
+		/// <summary>Returns the canonical prefab name for a token, e.g. "$enemy_greydwarf" -> "Greydwarf".</summary>
+		public static string GetPrefabForToken(string token)
+		{
+			if (string.IsNullOrEmpty(token)) return null;
+			return PrefabByToken.TryGetValue(token, out string prefab) ? prefab : null;
+		}
+
+		/// <summary>
+		/// Resolves the base courage tier for any creature identifier (prefab name, localization token, or stripped name).
+		/// Prioritizes standard vanilla tiers so reskins/variants never distort the base species courage.
+		/// </summary>
+		public static int GetTierForNameOrToken(string nameOrToken)
+		{
+			if (string.IsNullOrEmpty(nameOrToken))
+			{
+				return 1;
+			}
+
+			// 1. Direct vanilla tier lookup (e.g. "Greydwarf", "Troll", "Skeleton")
+			if (VanillaTiers.TryGetValue(nameOrToken, out int vt))
+			{
+				return vt;
+			}
+
+			// 2. Prefab hash lookup if passed a known prefab name
+			if (TierByPrefabHash.TryGetValue(nameOrToken.GetStableHashCode(), out int pt))
+			{
+				return pt;
+			}
+
+			// 3. If token starts with $ or $enemy_, resolve counterpart prefab
+			if (nameOrToken.StartsWith("$", StringComparison.OrdinalIgnoreCase))
+			{
+				if (PrefabByToken.TryGetValue(nameOrToken, out string counterpartPrefab))
+				{
+					if (VanillaTiers.TryGetValue(counterpartPrefab, out int pvt))
+					{
+						return pvt;
+					}
+					if (TierByPrefabHash.TryGetValue(counterpartPrefab.GetStableHashCode(), out int ppt))
+					{
+						return ppt;
+					}
+				}
+
+				string stripped = nameOrToken.Replace("$enemy_", "").Replace("$", "");
+				if (VanillaTiers.TryGetValue(stripped, out int svt))
+				{
+					return svt;
+				}
+			}
+
+			// 4. Check ZNetScene prefab directly
+			if (ZNetScene.instance != null)
+			{
+				GameObject prefab = ZNetScene.instance.GetPrefab(nameOrToken);
+				if (prefab != null)
+				{
+					Character c = prefab.GetComponent<Character>();
+					if (c != null)
+					{
+						return GetTier(c);
+					}
+				}
+			}
+
+			// 5. Check Token table
+			if (TierByToken.TryGetValue(nameOrToken, out int tt))
+			{
+				return tt;
+			}
+
+			return 1;
 		}
 
 		public static bool IsFearless(Character character)

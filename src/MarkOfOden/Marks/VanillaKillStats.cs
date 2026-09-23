@@ -1,4 +1,6 @@
+using System;
 using System.Collections.Generic;
+using MarkOfOden.Fear;
 
 namespace MarkOfOden.Marks
 {
@@ -35,7 +37,7 @@ namespace MarkOfOden.Marks
 			}
 		}
 
-		/// <summary>Lifetime kills of one creature by this character, keyed by Character.m_name.</summary>
+		/// <summary>Lifetime kills of one creature by this character, keyed by Character.m_name or prefab name.</summary>
 		public static int KillsOf(string creatureName)
 		{
 			Dictionary<string, float> table = Table;
@@ -44,7 +46,42 @@ namespace MarkOfOden.Marks
 				return 0;
 			}
 
-			return table.TryGetValue(creatureName, out float kills) ? (int)kills : 0;
+			if (table.TryGetValue(creatureName, out float kills))
+			{
+				return (int)kills;
+			}
+
+			// If passed a prefab name ("Greydwarf"), try corresponding token ("$enemy_greydwarf")
+			if (!creatureName.StartsWith("$", StringComparison.OrdinalIgnoreCase))
+			{
+				string token = CreatureTiers.GetTokenForPrefab(creatureName);
+				if (!string.IsNullOrEmpty(token) && table.TryGetValue(token, out float tokenKills))
+				{
+					return (int)tokenKills;
+				}
+
+				if (table.TryGetValue("$enemy_" + creatureName.ToLowerInvariant(), out float guessKills))
+				{
+					return (int)guessKills;
+				}
+			}
+			else
+			{
+				// If passed a token ("$enemy_greydwarf"), try counterpart prefab name ("Greydwarf")
+				string prefab = CreatureTiers.GetPrefabForToken(creatureName);
+				if (!string.IsNullOrEmpty(prefab) && table.TryGetValue(prefab, out float prefabKills))
+				{
+					return (int)prefabKills;
+				}
+
+				string stripped = creatureName.Replace("$enemy_", "").Replace("$", "");
+				if (table.TryGetValue(stripped, out float strippedKills))
+				{
+					return (int)strippedKills;
+				}
+			}
+
+			return 0;
 		}
 
 		/// <summary>Every creature this character has killed, for publishing and for the status command.</summary>

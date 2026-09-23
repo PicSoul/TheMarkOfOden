@@ -119,6 +119,34 @@ namespace MarkOfOden
 			}
 		}
 
+		private void Update()
+		{
+			if (Player.m_localPlayer == null)
+			{
+				return;
+			}
+
+			if (Chat.instance != null && Chat.instance.HasFocus())
+			{
+				return;
+			}
+
+			if (Console.IsVisible() || TextInput.IsVisible())
+			{
+				return;
+			}
+
+			if (ModConfig.StandingsKey != null && ModConfig.StandingsKey.Value.IsDown())
+			{
+				StandingsPanel.Toggle();
+			}
+		}
+
+		private void OnGUI()
+		{
+			StandingsPanel.Draw();
+		}
+
 		private void OnDestroy()
 		{
 			MarkLedger.Changed -= OnMarkChanged;

@@ -12,6 +12,9 @@ rather than only compiled; multiplayer is what this build exists to test.
   character, so nothing has to be earned again.
 - Full multiplayer support. Each player's mark travels with them, so creatures fear the veteran and
   attack the newcomer standing beside him.
+- In-game Standings & Stats Viewer (hotkey `F4` or "Mark of Oden" tab in Inventory) with biome tabs,
+  strict spoiler protection for unvisited biomes, real-time search, boss statuses, and species fear tables.
+- Level-up / progression notification popups with trophy artwork and fanfare on boss defeats and species milestones.
 - Creatures in a mob hold their ground; the last one standing breaks. Starred creatures are braver.
 - Raids, boss fights and anything hunting you ignore fear entirely.
 - Anything you hit defends itself, and its own kind nearby join in rather than watching a fight happen
