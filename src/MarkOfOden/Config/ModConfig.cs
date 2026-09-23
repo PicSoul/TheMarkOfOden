@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Globalization;
 using BepInEx.Configuration;
@@ -122,6 +122,7 @@ namespace MarkOfOden.Config
 		public static ConfigEntry<bool> EnableProgressionPopups;
 		public static ConfigEntry<float> PopupDisplayDuration;
 		public static ConfigEntry<bool> EnablePopupAudio;
+		public static ConfigEntry<float> PopupScreenHeight;
 
 		public static ConfigEntry<KeyboardShortcut> StandingsKey;
 		public static ConfigEntry<bool> ShowStandingsInventoryButton;
@@ -267,6 +268,11 @@ namespace MarkOfOden.Config
 				"Seconds the progression banner remains visible before smoothly fading away.");
 			EnablePopupAudio = BindClient(SectionPopups, "Enable popup audio", true,
 				"Play uplifting sound effects when a progression or notoriety banner appears.");
+			PopupScreenHeight = BindClient(SectionPopups, "Popup screen height", 0.88f,
+				"How far up the screen the banner sits, where 1 is the very top and 0.5 the middle. " +
+				"Kept high by default so a boss kill does not put a panel across the fight that earned it. " +
+				"Clamped between 0.5 and 0.95, because the banner is anchored through its middle and would " +
+				"otherwise hang off the edge.");
 
 			StandingsKey = BindClient(SectionStandings, "Standings toggle key", new KeyboardShortcut(KeyCode.F4),
 				"Key to open the in-game Standings & Stats window.");

@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Reflection;
 using BepInEx;
 using BepInEx.Logging;
@@ -17,7 +17,7 @@ namespace MarkOfOden
 	{
 		public const string PluginGuid = "picsoul.valheim.markofoden";
 		public const string PluginName = "TheMarkOfOden";
-		public const string PluginVersion = "0.1.0";
+		public const string PluginVersion = "0.2.0";
 
 		/// <summary>
 		/// A server running this mod accepts only clients running the same version of it, and turns

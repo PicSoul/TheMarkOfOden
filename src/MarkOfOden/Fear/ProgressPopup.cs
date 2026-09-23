@@ -59,6 +59,17 @@ namespace MarkOfOden.Fear
 
 			GameObject obj = new GameObject("TheMarkOfOden_ProgressPopup", typeof(RectTransform), typeof(CanvasGroup));
 			obj.transform.SetParent(Hud.instance.transform, false);
+
+			// Fill the HUD, so a child's anchor means a fraction of the screen rather than a
+			// fraction of this object. A new RectTransform defaults to a 100x100 box pinned to
+			// the middle, and the banner anchored itself near the top of THAT - which put it
+			// about thirty pixels above the centre of the screen, right where a fight is.
+			RectTransform root = obj.GetComponent<RectTransform>();
+			root.anchorMin = Vector2.zero;
+			root.anchorMax = Vector2.one;
+			root.offsetMin = Vector2.zero;
+			root.offsetMax = Vector2.zero;
+
 			Instance = obj.AddComponent<ProgressPopup>();
 		}
 
@@ -115,8 +126,8 @@ namespace MarkOfOden.Fear
 			GameObject panel = new GameObject("Panel", typeof(RectTransform), typeof(Image));
 			panel.transform.SetParent(transform, false);
 			_panelRect = panel.GetComponent<RectTransform>();
-			_panelRect.anchorMin = new Vector2(0.5f, 0.82f);
-			_panelRect.anchorMax = new Vector2(0.5f, 0.82f);
+			_panelRect.anchorMin = new Vector2(0.5f, BannerHeight());
+			_panelRect.anchorMax = new Vector2(0.5f, BannerHeight());
 			_panelRect.pivot = new Vector2(0.5f, 0.5f);
 			_panelRect.sizeDelta = new Vector2(580f, 120f);
 
@@ -403,8 +414,35 @@ namespace MarkOfOden.Fear
 			_displayCoroutine = null;
 		}
 
+		/// <summary>How far up the screen the banner sits, 1 being the very top.</summary>
+		/// <remarks>
+		/// Read rather than fixed because the right answer depends on the rest of someone's
+		/// HUD, and on how much of the screen they are willing to give up mid-fight. Clamped
+		/// well short of either edge: the banner is 120 pixels tall and anchored through its
+		/// middle, so a value at the extreme would hang half of it off the screen.
+		/// </remarks>
+		private static float BannerHeight()
+		{
+			return Mathf.Clamp(ModConfig.PopupScreenHeight.Value, 0.5f, 0.95f);
+		}
+
+		/// <summary>Put the banner where the setting says, in case it changed since the last one.</summary>
+		private void PlaceBanner()
+		{
+			if (_panelRect == null)
+			{
+				return;
+			}
+
+			float height = BannerHeight();
+			_panelRect.anchorMin = new Vector2(0.5f, height);
+			_panelRect.anchorMax = new Vector2(0.5f, height);
+		}
+
 		private void ApplyData(PopupData data)
 		{
+			PlaceBanner();
+
 			_titleText.text = data.Title;
 			_headlineText.text = data.Headline;
 			_sublineText.text = data.Subline;
