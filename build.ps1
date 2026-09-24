@@ -1,9 +1,15 @@
-<#
+﻿<#
     Builds and packages The Mark of Oden for Thunderstore.
 
     Usage:
         .\build.ps1              # build + verify + validate + zip
-        .\build.ps1 -Install     # also copy into the local r2modman profile
+        .\build.ps1 -Install     # also install a development copy into the Gale client profile
+        .\build.ps1 -RemoveDev   # take the development copy out again
+
+    Testing a change: switch the released mod off in Gale, run -Install, play. When the new
+    version is published, run -RemoveDev and switch the released mod back on in Gale.
+    The development copy lives in its own folder, PicSoul-TheMarkOfOden-DEV, and never touches
+    the folder Gale manages - see devcopy.ps1 for why that matters.
 
     Thunderstore package versions are immutable: once a version is uploaded it can
     never be edited or replaced. Bump version_number in manifest.json AND <Version>
@@ -13,6 +19,7 @@
 [CmdletBinding()]
 param(
     [switch]$Install,
+    [switch]$RemoveDev,
     [switch]$SkipPatchCheck,
     [string]$Profile = "1.0 Release Client Mods"
 )
@@ -22,6 +29,16 @@ $root = $PSScriptRoot
 
 function Fail($msg) { Write-Host "FAIL: $msg" -ForegroundColor Red; exit 1 }
 function Ok($msg)   { Write-Host "  ok   $msg" -ForegroundColor Green }
+
+. "$root\devcopy.ps1"
+$devFolder = "PicSoul-TheMarkOfOden-DEV"
+$devDll = "MarkOfOden.dll"
+
+if ($RemoveDev) {
+    Remove-DevCopy -ProfileName $Profile -FolderName $devFolder -DllName $devDll
+    Write-Host "`ndone.`n" -ForegroundColor Cyan
+    exit 0
+}
 
 # ---------------------------------------------------------------- version sync
 $manifest = Get-Content "$root\manifest.json" -Raw | ConvertFrom-Json
@@ -145,20 +162,8 @@ Ok "packaged $(Split-Path $zip -Leaf) ($([math]::Round((Get-Item $zip).Length / 
 
 # ------------------------------------------------------------------- install
 if ($Install) {
-    Write-Host "`ninstalling to local profile '$Profile'..." -ForegroundColor Cyan
-
-    if (Get-Process -Name "valheim" -ErrorAction SilentlyContinue) {
-        Fail "Valheim is running; close it before installing"
-    }
-
-    $pluginRoot = "$env:APPDATA\com.kesomannen.gale\valheim\profiles\$Profile\BepInEx\plugins"
-    if (-not (Test-Path $pluginRoot)) { Fail "profile not found: $pluginRoot" }
-
-    $target = Get-ChildItem $pluginRoot -Directory | Where-Object { $_.Name -like "*TheMarkOfOden" } | Select-Object -First 1
-    if (-not $target) { Fail "no existing *TheMarkOfOden folder under $pluginRoot; install it once via r2modman first" }
-
-    Copy-Item "$stage\*" $target.FullName -Force
-    Ok "installed to $($target.Name)"
+    Install-DevCopy -ProfileName $Profile -FolderName $devFolder -DllName $devDll `
+        -Stage $stage -Version $manifest.version_number
 }
 
 Write-Host "`ndone.`n" -ForegroundColor Cyan
