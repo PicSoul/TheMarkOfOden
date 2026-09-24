@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Text;
 using MarkOfOden.Config;
@@ -27,7 +27,7 @@ namespace MarkOfOden
 
 			new Terminal.ConsoleCommand(
 				"moo",
-				"The Mark of Oden. Subcommands: status, why, dump, bosses, optout, optin, reset, tier <0-8>",
+				"The Mark of Oden. Subcommands: status, why, dump, bosses, creatures, optout, optin, reset, tier <0-8>",
 				args => Run(args),
 				isCheat: false,
 				isNetwork: false,
@@ -61,6 +61,11 @@ namespace MarkOfOden
 					case "bosses":
 						Report(args.Context, CreatureTiers.DumpBosses());
 						break;
+					case "creatures":
+						// Maintenance: finds creatures nothing in the game spawns, so the cheat sheet can
+						// leave them out. Reads only, and changes nothing, so it needs no admin gate.
+						CreatureScan.Start(args.Context);
+						break;
 					case "optout":
 						SetOptedOut(args.Context, true);
 						break;
@@ -73,7 +78,7 @@ namespace MarkOfOden
 						Rebuild(args.Context);
 						break;
 					default:
-						args.Context.AddString("Unknown subcommand. Try: status, why, dump, bosses, optout, optin, reset, tier <0-8>");
+						args.Context.AddString("Unknown subcommand. Try: status, why, dump, bosses, creatures, optout, optin, reset, tier <0-8>");
 						break;
 				}
 			}

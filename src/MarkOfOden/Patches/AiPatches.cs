@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using HarmonyLib;
 using MarkOfOden.Config;
 using MarkOfOden.Fear;
@@ -42,7 +42,12 @@ namespace MarkOfOden.Patches
 	}
 
 	/// <summary>
-	/// Drives the actual flee or cower, after the original has run.
+	/// Carries out what a creature has decided about you, after the original has run.
+	///
+	/// Two things happen here. A creature that is losing a fight to someone who outranks it may break
+	/// and run - see <see cref="Morale"/>. And a creature that is not willing to fight you drops you as a
+	/// target, which is all that leaving you alone takes. Nothing here makes a creature run on sight:
+	/// that used to happen, and it made every rank you gained a switch thrown on whole biomes at once.
 	///
 	/// A postfix rather than a transpiler on purpose: FearMe reaches the same place by IL-matching
 	/// m_fleeIfHurtWhenTargetCantBeReached inside UpdateAI, and that method changed shape in 1.0.
@@ -71,6 +76,14 @@ namespace MarkOfOden.Patches
 				// A creature already in a fight stays in it, rather than timing out mid-swing.
 				FearEvaluator.NoteStillFighting(__instance);
 
+				// Losing a fight to someone who outranks it. Checked before anything else, because a
+				// broken creature's only business is getting away.
+				if (Morale.Tick(__instance, dt))
+				{
+					__result = true;
+					return;
+				}
+
 				FearLevel level = FearEvaluator.GetCurrent(__instance, out Player player);
 				if (level < FearLevel.Cautious || player == null)
 				{
@@ -83,37 +96,8 @@ namespace MarkOfOden.Patches
 				if (__instance.m_targetCreature == player)
 				{
 					__instance.m_targetCreature = null;
-
-					if (level < FearLevel.Afraid)
-					{
-						// Merely wary: stand down rather than run, and stop being alerted about it.
-						__instance.SetAlerted(false);
-					}
+					__instance.SetAlerted(false);
 				}
-
-				if (level < FearLevel.Afraid)
-				{
-					return;
-				}
-
-				if (level == FearLevel.Terrified && CowerState.ShouldCower(__instance, player))
-				{
-					CowerState.Tick(__instance, player);
-					__instance.m_targetCreature = null;
-					__result = true;
-					return;
-				}
-
-				if (ModConfig.RunWhenAfraid.Value)
-				{
-					// Vanilla flee speed follows the alerted flag, so an un-alerted creature ambles away.
-					__instance.SetAlerted(true);
-				}
-
-				__instance.Flee(dt, player.transform.position);
-				__instance.m_targetCreature = null;
-				__instance.m_updateTargetTimer = Mathf.Max(__instance.m_updateTargetTimer, 1f);
-				__result = true;
 			}
 			catch (Exception e)
 			{

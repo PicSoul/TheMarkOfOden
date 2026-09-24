@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Text;
 using MarkOfOden.Config;
@@ -81,6 +81,13 @@ namespace MarkOfOden.Fear
 		private static readonly HashSet<string> NeverFleeTokens = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 		private static readonly HashSet<string> AutoNeverFlee = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
+		/// <summary>
+		/// Creatures the food check finds that nobody actually hunts. The check reads drop tables, and a
+		/// few monsters carry something a cooking station can use - Seekers carry royal jelly - which would
+		/// otherwise make them fight to the end like a boar rather than break like the monsters they are.
+		/// </summary>
+		private static readonly HashSet<string> NotHuntedTokens = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
 		/// <summary>Item prefabs that a cooking station turns into something edible.</summary>
 		private static readonly HashSet<string> CookableIntoFood = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
@@ -97,6 +104,29 @@ namespace MarkOfOden.Fear
 		private static readonly Dictionary<string, int> BossNumberByToken = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
 
 		public static bool Ready { get; private set; }
+
+		/// <summary>
+		/// Where each creature is spawned into the world, by prefab: the earliest biome in the game's
+		/// progression that any of its world spawns names. Read from the spawn lists the game already
+		/// holds in memory, so it costs nothing, and creature mods have to register there for the game
+		/// to spawn their creatures at all - which is what makes it the one thing about a modded
+		/// creature that says how tough it is meant to be.
+		/// </summary>
+		private static readonly Dictionary<string, Heightmap.Biome> SpawnBiomeByPrefab = new Dictionary<string, Heightmap.Biome>(StringComparer.OrdinalIgnoreCase);
+
+		/// <summary>How far into the game each biome is, on the same scale as creature tiers.</summary>
+		private static readonly Dictionary<Heightmap.Biome, int> BiomeTier = new Dictionary<Heightmap.Biome, int>
+		{
+			{ Heightmap.Biome.Meadows, 0 },
+			{ Heightmap.Biome.BlackForest, 1 },
+			{ Heightmap.Biome.Swamp, 3 },
+			{ Heightmap.Biome.Mountain, 3 },
+			{ Heightmap.Biome.Ocean, 4 },
+			{ Heightmap.Biome.Plains, 5 },
+			{ Heightmap.Biome.Mistlands, 6 },
+			{ Heightmap.Biome.AshLands, 7 },
+			{ Heightmap.Biome.DeepNorth, 8 }
+		};
 
 		/// <summary>Rebuilds the whole table from the live prefab list. Safe to call again on config change.</summary>
 		public static void Build(ZNetScene scene)
@@ -123,7 +153,9 @@ namespace MarkOfOden.Fear
 			FearlessTokens.Clear();
 			NeverFleeTokens.Clear();
 			AutoNeverFlee.Clear();
+			NotHuntedTokens.Clear();
 			CookableIntoFood.Clear();
+			ReadSpawnBiomes();
 
 			BuildCookableFoodSet(scene);
 
@@ -161,13 +193,15 @@ namespace MarkOfOden.Fear
 				HealthByToken[token] = character.m_health;
 				RecordVanillaQuirks(prefab, token);
 
+				// Anything hunted for food may stop caring about you, but never breaks and runs. This
+				// used to stop at tier 1, so boar and neck stood their ground while a wolf - which
+				// drops meat as surely as a boar does - bolted the moment a player outranked it.
+				// That was the wrong way round: a wolf that flees turns every hunt into a chase, and
+				// the dangerous food animals are exactly the ones a hunt is for.
 				if (DropsEdible(character))
 				{
 					DropsFood.Add(token);
-					if (tier <= ModConfig.FoodAnimalMaxTier.Value)
-					{
-						AutoNeverFlee.Add(token);
-					}
+					AutoNeverFlee.Add(token);
 				}
 
 				if (IsArmed(prefab))
@@ -202,6 +236,9 @@ namespace MarkOfOden.Fear
 
 			Plugin.Log.LogInfo("Creature tier table built: " + TierByToken.Count + " creatures ("
 				+ guessed + " rated by heuristic), " + BossTierByKey.Count + " bosses.");
+
+			// Every creature and the name to use for it, beside the config, for the lists that take names.
+			CreatureCatalog.WriteCheatSheet();
 		}
 
 		/// <summary>
@@ -421,6 +458,11 @@ namespace MarkOfOden.Fear
 				NeverFleeTokens.Add(ResolveToken(name));
 			}
 
+			foreach (string name in ModConfig.ParseNameList(ModConfig.NotHuntedAnimals.Value))
+			{
+				NotHuntedTokens.Add(ResolveToken(name));
+			}
+
 		}
 
 		/// <summary>Config may name a creature by prefab (Greyling) or by localisation token.</summary>
@@ -436,9 +478,127 @@ namespace MarkOfOden.Fear
 				return known;
 			}
 
-			int fromFaction = TierFromFaction(character.m_faction);
+			return GuessTier(prefabName, character);
+		}
+
+		/// <summary>
+		/// A tier for a creature nobody has rated by hand, mostly one another mod adds.
+		///
+		/// Where it spawns counts double when that is known, and health fills in how tough it is within
+		/// that biome. Faction was the stand-in for biome before, and a poor one: a creature mod can put
+		/// the same kind of shark in the Meadows and in the Mistlands, same faction and much the same
+		/// health, and they would have come out as the same tier - too late to leave a new player alone
+		/// in one place, too early to leave a mid-game player alone in the other. Faction is still used
+		/// for anything that never spawns into the world by itself.
+		///
+		/// Public so 'moo dump' can show the guess beside the hand-tuned tier for every vanilla creature,
+		/// which is how this formula is checked rather than trusted.
+		/// </summary>
+		public static int GuessTier(string prefabName, Character character)
+		{
 			int fromHealth = TierFromHealth(character.m_health);
+
+			if (SpawnBiomeByPrefab.TryGetValue(prefabName, out Heightmap.Biome biome) && BiomeTier.TryGetValue(biome, out int fromBiome))
+			{
+				return Mathf.Clamp(Mathf.RoundToInt((2f * fromBiome + fromHealth) / 3f), 0, MaxTier);
+			}
+
+			int fromFaction = TierFromFaction(character.m_faction);
 			return Mathf.Clamp(Mathf.RoundToInt((fromFaction + fromHealth) / 2f), 0, MaxTier);
+		}
+
+		/// <summary>The earliest biome a creature is spawned into by the world, or None if it never is.</summary>
+		public static Heightmap.Biome SpawnBiomeOf(string prefabName)
+		{
+			return !string.IsNullOrEmpty(prefabName) && SpawnBiomeByPrefab.TryGetValue(prefabName, out Heightmap.Biome biome)
+				? biome
+				: Heightmap.Biome.None;
+		}
+
+		/// <summary>
+		/// Reads every world spawn entry: the template the game builds each zone's spawner from, and every
+		/// spawner already alive, since some mods add their creatures to the live ones instead.
+		/// </summary>
+		private static void ReadSpawnBiomes()
+		{
+			SpawnBiomeByPrefab.Clear();
+
+			List<SpawnSystem> systems = new List<SpawnSystem>();
+
+			SpawnSystem template = ZoneSystem.instance != null && ZoneSystem.instance.m_zoneCtrlPrefab != null
+				? ZoneSystem.instance.m_zoneCtrlPrefab.GetComponent<SpawnSystem>()
+				: null;
+			if (template != null)
+			{
+				systems.Add(template);
+			}
+
+			if (SpawnSystem.m_instances != null)
+			{
+				systems.AddRange(SpawnSystem.m_instances);
+			}
+
+			foreach (SpawnSystem system in systems)
+			{
+				if (system == null || system.m_spawnLists == null)
+				{
+					continue;
+				}
+
+				foreach (SpawnSystemList list in system.m_spawnLists)
+				{
+					if (list?.m_spawners == null)
+					{
+						continue;
+					}
+
+					foreach (SpawnSystem.SpawnData data in list.m_spawners)
+					{
+						if (data == null || !data.m_enabled || data.m_prefab == null)
+						{
+							continue;
+						}
+
+						Heightmap.Biome earliest = EarliestBiome(data.m_biome);
+						if (earliest == Heightmap.Biome.None)
+						{
+							continue;
+						}
+
+						string name = data.m_prefab.name;
+						if (!SpawnBiomeByPrefab.TryGetValue(name, out Heightmap.Biome known) || BiomeTier[earliest] < BiomeTier[known])
+						{
+							SpawnBiomeByPrefab[name] = earliest;
+						}
+					}
+				}
+			}
+		}
+
+		/// <summary>
+		/// The earliest biome in a spawn entry's mask. An entry that names nearly every biome says
+		/// nothing about where a creature belongs, so it is ignored rather than read as the Meadows.
+		/// </summary>
+		private static Heightmap.Biome EarliestBiome(Heightmap.Biome mask)
+		{
+			Heightmap.Biome earliest = Heightmap.Biome.None;
+			int count = 0;
+
+			foreach (KeyValuePair<Heightmap.Biome, int> pair in BiomeTier)
+			{
+				if ((mask & pair.Key) == 0)
+				{
+					continue;
+				}
+
+				count++;
+				if (earliest == Heightmap.Biome.None || pair.Value < BiomeTier[earliest])
+				{
+					earliest = pair.Key;
+				}
+			}
+
+			return count >= 5 ? Heightmap.Biome.None : earliest;
 		}
 
 		private static int TierFromFaction(Character.Faction faction)
@@ -603,7 +763,7 @@ namespace MarkOfOden.Fear
 			return character != null && FearlessTokens.Contains(character.m_name);
 		}
 
-		/// <summary>Creatures allowed to lose interest in you, but never to break and run.</summary>
+		/// <summary>Hunted animals: they may leave you alone, but provoked they fight to the end and never break.</summary>
 		public static bool NeverFlees(Character character)
 		{
 			if (character == null)
@@ -611,12 +771,7 @@ namespace MarkOfOden.Fear
 				return false;
 			}
 
-			if (NeverFleeTokens.Contains(character.m_name))
-			{
-				return true;
-			}
-
-			return ModConfig.AutoNeverFleeFoodAnimals.Value && AutoNeverFlee.Contains(character.m_name);
+			return NeverFleesToken(character.m_name);
 		}
 
 		/// <summary>
@@ -680,9 +835,29 @@ namespace MarkOfOden.Fear
 				return true;
 			}
 
-			return HasAny(humanoid.m_defaultItems)
+			if (HasAny(humanoid.m_defaultItems)
 				|| HasAny(humanoid.m_randomWeapon)
-				|| (humanoid.m_randomItems != null && humanoid.m_randomItems.Length > 0);
+				|| (humanoid.m_randomItems != null && humanoid.m_randomItems.Length > 0))
+			{
+				return true;
+			}
+
+			// Some creatures are handed one of several whole kits instead. A troll's club comes this way -
+			// log or no log - and so do the golem's spikes and a Krigen's blades. Missing this slot is
+			// how a troll came to be labelled harmless, which the standings viewer then repeated as
+			// "has no way to fight".
+			if (humanoid.m_randomSets != null)
+			{
+				foreach (Humanoid.ItemSet set in humanoid.m_randomSets)
+				{
+					if (set != null && HasAny(set.m_items))
+					{
+						return true;
+					}
+				}
+			}
+
+			return false;
 		}
 
 		private static bool HasAny(GameObject[] items)
@@ -707,6 +882,43 @@ namespace MarkOfOden.Fear
 		public static bool IsArmed(Character character)
 		{
 			return character != null && ArmedTokens.Contains(character.m_name);
+		}
+
+		/// <summary>
+		/// The same question as <see cref="IsArmed(Character)"/>, asked of a name rather than a live
+		/// creature. The standings panel lists species, not individuals, so it has no Character to ask.
+		/// </summary>
+		public static bool IsArmedToken(string nameOrToken)
+		{
+			return ArmedTokens.Contains(TokenFor(nameOrToken));
+		}
+
+		/// <summary>
+		/// The same question as <see cref="NeverFlees(Character)"/>, asked of a name. Without it the
+		/// standings panel worked the verdict out for itself and skipped this rule entirely, so it told
+		/// players a wolf would flee from them long after the wolf had stopped doing so.
+		/// </summary>
+		public static bool NeverFleesToken(string nameOrToken)
+		{
+			string token = TokenFor(nameOrToken);
+
+			if (NeverFleeTokens.Contains(token))
+			{
+				return true;
+			}
+
+			return ModConfig.AutoNeverFleeFoodAnimals.Value && AutoNeverFlee.Contains(token) && !NotHuntedTokens.Contains(token);
+		}
+
+		/// <summary>Accepts either a localisation token or a prefab name, and hands back the token.</summary>
+		private static string TokenFor(string nameOrToken)
+		{
+			if (string.IsNullOrEmpty(nameOrToken))
+			{
+				return string.Empty;
+			}
+
+			return TokenByPrefab.TryGetValue(nameOrToken, out string token) ? token : nameOrToken;
 		}
 
 		/// <summary>Whether the creature is something a player would kill for food, at any tier.</summary>
@@ -755,16 +967,23 @@ namespace MarkOfOden.Fear
 				bool overridden = !HeuristicTiers.TryGetValue(pair.Key, out int guess) || guess != pair.Value;
 				string faction = FactionByToken.TryGetValue(pair.Key, out string f) ? f : "?";
 				float health = HealthByToken.TryGetValue(pair.Key, out float hp) ? hp : 0f;
+				string prefabName = PrefabByToken.TryGetValue(pair.Key, out string p) ? p : pair.Key;
+				Heightmap.Biome spawns = SpawnBiomeOf(prefabName);
+				GameObject guessPrefab = ZNetScene.instance != null ? ZNetScene.instance.GetPrefab(prefabName) : null;
+				Character guessCharacter = guessPrefab != null ? guessPrefab.GetComponent<Character>() : null;
+
 				lines.Add(pair.Key
 					+ " = " + DescribeTiers(pair.Key, pair.Value)
 					+ "  [" + faction + "]"
 					+ "  hp " + health.ToString("0")
+					+ "  spawns " + (spawns == Heightmap.Biome.None ? "-" : spawns.ToString())
+					+ (guessCharacter != null ? "  guess " + GuessTier(prefabName, guessCharacter) : string.Empty)
 					+ "  prefabs: " + PrefabsFor(pair.Key)
 					+ (overridden ? " (override)" : string.Empty)
 					+ (FearlessTokens.Contains(pair.Key) ? " FEARLESS" : string.Empty)
 					+ (NeverFleeTokens.Contains(pair.Key) ? " NEVER-FLEES" : string.Empty)
 					+ (AutoNeverFlee.Contains(pair.Key) ? " FOOD" : string.Empty)
-					+ (DropsFood.Contains(pair.Key) && !AutoNeverFlee.Contains(pair.Key) ? " DROPS-FOOD" : string.Empty)
+					+ (NotHuntedTokens.Contains(pair.Key) ? " NOT-HUNTED" : string.Empty)
 					+ (ArmedTokens.Contains(pair.Key) ? " ARMED" : " HARMLESS")
 					+ (VanillaQuirks.TryGetValue(pair.Key, out string quirks) ? "  [vanilla: " + quirks + "]" : string.Empty));
 			}

@@ -25,47 +25,67 @@ set up, no new character needed.
 
 ## How creatures react
 
-Each creature weighs your mark against its own nerve — its tier, its star level, how many friends are
-standing next to it, and anything another mod has done to make it deadlier.
+Each creature asks two questions about you, and never at the same time.
 
-| Reaction | What it does |
+**Will it pick a fight with you?** It weighs your mark against its own nerve: its tier, its star
+level, how many of its kind are standing beside it, whether it is night, and anything another mod has
+done to make it deadlier. Outrank it and it **leaves you alone**: it won't attack you, and it won't run
+from you either. It just gets on with its day. Don't outrank it and it behaves exactly as it does in the
+base game.
+
+**If a fight starts, is it losing?** Nothing runs at the sight of you. Hit a creature you outrank and it
+fights back, but once it is badly hurt its nerve **breaks** and it runs. The further you outrank it,
+the sooner that comes. A creature that matches or outranks you never breaks; it fights to the end.
+Once a broken creature has run far enough it settles and leaves you alone. Hit it again and it breaks
+again at once.
+
+| What you see | What it means |
 |---|---|
-| **Normal** | Vanilla. It has no idea who you are. |
-| **Cautious** | Stops treating you as prey. Won't attack, won't run, just gets on with its day. |
-| **Afraid** | Turns and runs. |
-| **Terrified** | Runs — and when cornered, or when you are right on top of it, stops dead and faces you. |
+| **Normal** | You don't outrank it, so it behaves exactly as in the base game. |
+| **Wary** | You outrank it. It will not start a fight with you, but it defends itself if you start one. |
+| **Fleeing** | It was losing a fight to you and its nerve broke. |
+| **Provoked** | You hit it, and it is fighting back. |
 
-**Raids still come for you.** Creatures spawned by an active raid ignore fear entirely, however
-fearsome you are, so a raid is still a raid. Anything hunting you specifically is likewise undeterred.
+**Hunted animals fight to the end.** Anything you hunt for meat may leave you alone, but provoked it
+never breaks, so a hunt is a fight and never a chase. Which creatures those are is worked out from their
+own drop tables (anything that drops something edible, or something a cooking station turns into food),
+so it covers creatures this mod has never heard of. That includes the dangerous ones: wolf, lox, serpent.
+Juveniles are classed with whatever they grow into.
 
-**Boss fights stay boss fights.** Creatures near an alerted boss ignore fear, so the adds a boss summons
-keep coming instead of losing their nerve halfway through and handing you the fight.
+A few monsters happen to drop something a cooking station can use (the Seekers carry royal jelly, and the
+Deep North Fuling carries meat) without being anything anyone hunts, so they are listed in
+`Not hunted animals` and break like any other monster. `Never flee creatures` works the other way round.
 
-**Pack courage.** Creatures in a mob hold their ground. Thin the mob out and the last one standing
-breaks. Starred creatures are braver than their common kin.
+Deer and hare are untouched: the game has them run from everything, and this mod leaves them to it.
 
-**Food animals lose interest but never run.** Anything you hunt for meat can stop caring about you, but
-never breaks and flees however fearsome you are. One that bolts turns hunting into a chase; one that
-charges a Viking who has killed every boss looks absurd. Standing there ignoring you is the only reading
-that is neither — and they still defend themselves if you hit them.
+**The last one standing breaks.** A creature's nerve is read as the fight goes on, so as its packmates
+fall around it, it breaks sooner. Starred creatures are braver than their common kin.
 
-Which creatures those are is worked out from their own drop tables — anything weak enough to be prey
-that drops something edible, or something a cooking station turns into food — so it covers creatures
-this mod has never heard of rather than relying on a list that goes stale. Juveniles are classed with
-whatever they grow into, so piglets behave like the boars beside them rather than being judged on their
-own empty drop table. Wolves, lox and serpents drop meat but are far too dangerous to qualify, so they
-still lose their nerve. `moo dump` prints what it found, and `Never flee creatures` adds to it.
+**The night is still dangerous.** Between dusk and dawn every creature finds a little more nerve.
+Something that would leave you alone by day may come for you after dark, and something that would break
+early holds on longer. `Night courage` sets how much; 0 makes the night no different from the day.
 
-**Taming is untouched.** Wolves, lox and other hostile tameables do fear you, as they should. But once
-an animal has eaten your food it is already being tamed, and from that moment it behaves exactly as it
-does in the base game — so taming works the way you already know, at any mark.
+**Raids still come for you.** Creatures spawned by an active raid ignore all of this, however fearsome
+you are, so a raid is still a raid. Anything hunting you specifically is likewise undeterred.
 
-**Cornered creatures fight back, and their kind come with them.** Hit anything and it defends itself,
-however frightened it was — so hunting for meat and hides never turns into a chase. Others of its own
-kind close enough to hear join in, so a pack does not stand and watch you battle one of its members.
-They stay in the fight for as long as they are actually fighting you, and go back to being afraid once
-they lose track of you. This is tracked per attacker, so your friend picking a fight does not make them
-angry at you.
+**Boss fights stay boss fights.** Creatures near an alerted boss ignore all of this, so the adds a boss
+summons keep coming instead of losing their nerve halfway through and handing you the fight.
+
+**Taming is untouched.** Once an animal has eaten your food it is already being tamed, and from that
+moment it behaves exactly as it does in the base game, so taming works the way you already know at any
+mark.
+
+**Their kind come with them.** Hit anything and others of its own kind close enough to hear join in, so a
+pack does not stand and watch you battle one of its members. This is tracked per attacker, so your friend
+picking a fight does not make them angry at you.
+
+### Every creature's name
+
+The config's creature lists want the name the game's files use, which is not always the one you see in
+game. `picsoul.valheim.markofoden.creatures.txt`, beside the config file, lists every creature with the
+name to use, grouped by biome. It is rewritten each time a world loads, so it includes creatures other
+mods add. **It lists everything, spoilers included.** Creatures that exist in the game's files but that
+nothing in normal play ever spawns are left out.
 
 ## Multiplayer
 
@@ -95,17 +115,15 @@ A frightened creature's name plate changes: the name is tinted and gains a marke
 | Plate | Meaning |
 |---|---|
 | unchanged | it has no particular opinion of you |
-| green `▼ wary` | it will not start a fight |
-| cyan `▼▼ fleeing` | it runs |
-| pale ice `▼▼▼ panicked` | it runs, and cowers when cornered |
-| amber `▲ cornered` | you hit it, so it is fighting back |
+| green `▼ wary` | it will not start a fight with you |
+| cyan `▼▼ fleeing` | it was losing a fight to you, and its nerve broke |
+| amber `▲ provoked` | you hit it, so it is fighting back |
 | amber `▲ unafraid` | your name means nothing to it, and it is armed |
 
-There is one scale here, written three times over. The **word** says what the creature is about to do,
-so there is nothing to learn on your first creature. The **arrow** points the way it is about to move:
-down for one putting distance between it and you, up for the one coming at you. The **colour** cools
-and pales as it comes further apart, green to cyan to ice, with the one warm colour reserved for the
-one that will still fight you.
+The **word** says what the creature is about to do, so there is nothing to learn on your first
+creature. The **arrow** points the way it is about to move: down for one keeping away from you, up for
+one that will come at you. The **colour** is cool for the two that will not fight you and warm for the
+two that will.
 
 Every state is the same rung on all three, so there is no combination to decode and any one of them is
 enough on its own — which is what makes it readable across a field, in a fight, or without colour
@@ -137,7 +155,7 @@ Check your progress, boss statuses, and species fear standing at any time:
 - **Hotkey**: Press **`F4`** (configurable) to toggle the Standings & Lore panel.
 - **Inventory Button**: Click the **"Mark of Oden"** button embedded directly in your inventory screen.
 - **Strict Spoiler Protection**: Only biomes your character has personally explored are visible. Unvisited biomes, future bosses, and undiscovered creatures remain concealed to preserve discovery.
-- **Live Metrics**: Shows your current Mark tier, lifetime kills per species, notoriety progress, and live fear dispositions (`Wary`, `Fleeing`, `Panicked`, `Unafraid`, or `Harmless`).
+- **Live Metrics**: Shows your current Mark tier, lifetime kills per species, notoriety progress, and live dispositions (`Wary`, `Unafraid`, or `Harmless`), with how early each would break if you picked a fight.
 
 ## Progression Notification Popups
 
@@ -192,6 +210,8 @@ Type `moo` in the console for a summary. Useful ones:
 - `moo why` — the full arithmetic for the nearest creature: threat, courage, pack bonus, verdict
 - `moo dump` — print the resolved creature tier table, including modded and Deep North creatures
 - `moo bosses` — every boss, its rank, and whether this character has killed it
+- `moo creatures` — a maintenance scan that follows every way the game spawns a creature and lists any that
+  nothing spawns. Takes a minute or two; the report lands in `BepInEx\MarkOfOden-creature-scan.txt`
 - `moo optout` — turn your own mark off, so nothing fears you; `moo optin` turns it back on
 - `moo reset` — work your mark out again from scratch, if it ever looks wrong
 - `moo tier <0-8>` — force a mark tier for testing (`moo tier -1` returns to your real one)
@@ -206,9 +226,10 @@ whenever you opt back in. On a shared world it only affects you: other players s
 
 ## Configuration
 
-Everything is tunable in the config file: the thresholds for each reaction, pack courage, cower
-behaviour, notoriety milestones, how far a cry for help carries, per-creature tier overrides, and which
-creatures never flee. Creature tiers are worked out from the prefabs themselves, so modded creatures get
+Everything is tunable in the config file: when a creature leaves you alone, how much bolder creatures
+are at night, how early a losing creature breaks, pack courage, notoriety milestones, how far a cry for
+help carries, per-creature tier overrides, and which creatures count as hunted animals. Turn
+`Creatures can break` off and everything that fights you fights to the end. Creature tiers are worked out from the prefabs themselves, so modded creatures get
 a sensible tier automatically — use `moo dump` to see what was guessed and override anything that looks
 wrong.
 

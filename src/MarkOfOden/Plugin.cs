@@ -17,7 +17,7 @@ namespace MarkOfOden
 	{
 		public const string PluginGuid = "picsoul.valheim.markofoden";
 		public const string PluginName = "TheMarkOfOden";
-		public const string PluginVersion = "0.2.0";
+		public const string PluginVersion = "0.4.0";
 
 		/// <summary>
 		/// A server running this mod accepts only clients running the same version of it, and turns
@@ -68,7 +68,10 @@ namespace MarkOfOden
 			ConsoleCommands.Register();
 			JotunnSoft.Init();
 
-			Log.LogInfo(PluginName + " " + PluginVersion + " loaded.");
+			// Where from, as well as which version. A development copy and the released one can sit
+			// side by side in a profile, and the folder is what tells them apart.
+			Log.LogInfo(PluginName + " " + PluginVersion + " loaded from "
+				+ System.IO.Path.GetFileName(System.IO.Path.GetDirectoryName(Info.Location)) + ".");
 		}
 
 		private void OnTablesChanged(object sender, EventArgs e)

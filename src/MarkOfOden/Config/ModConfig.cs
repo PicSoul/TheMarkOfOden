@@ -44,7 +44,7 @@ namespace MarkOfOden.Config
 	{
 		private const string SectionGeneral = "1 - General";
 		private const string SectionFear = "2 - Fear";
-		private const string SectionCower = "3 - Cower";
+		private const string SectionMorale = "3 - Morale";
 		private const string SectionMark = "4 - The Mark";
 		private const string SectionTables = "5 - Creature tables";
 		private const string SectionDisplay = "6 - Display";
@@ -60,7 +60,7 @@ namespace MarkOfOden.Config
 		/// file, so a changed default never reaches anyone who has run the mod before; this moves them
 		/// across, but only where they were still on the old default and had not chosen for themselves.
 		/// </summary>
-		private const int CurrentConfigVersion = 5;
+		private const int CurrentConfigVersion = 7;
 
 		/// <summary>
 		/// Whether the synced settings are enforced on clients, or merely handed to them.
@@ -76,8 +76,7 @@ namespace MarkOfOden.Config
 		public static ConfigEntry<bool> Enabled;
 
 		public static ConfigEntry<int> CautiousThreshold;
-		public static ConfigEntry<int> AfraidThreshold;
-		public static ConfigEntry<int> TerrifiedThreshold;
+		public static ConfigEntry<float> NightCourage;
 		public static ConfigEntry<float> StarCourage;
 		public static ConfigEntry<float> StarCourageMax;
 		public static ConfigEntry<float> InfusionCourage;
@@ -94,9 +93,11 @@ namespace MarkOfOden.Config
 		public static ConfigEntry<float> RetaliationWindow;
 		public static ConfigEntry<float> HelpCallRadius;
 
-		public static ConfigEntry<bool> EnableCower;
-		public static ConfigEntry<float> CowerRange;
-		public static ConfigEntry<float> CowerStaggerInterval;
+		public static ConfigEntry<bool> MoraleEnabled;
+		public static ConfigEntry<float> MoraleBreakHealth;
+		public static ConfigEntry<float> MoraleBreakStep;
+		public static ConfigEntry<float> MoraleBreakCap;
+		public static ConfigEntry<float> MoraleRunTime;
 
 		public static ConfigEntry<string> NotorietyThresholds;
 		public static ConfigEntry<bool> SeedFromHistory;
@@ -107,8 +108,8 @@ namespace MarkOfOden.Config
 		public static ConfigEntry<string> CreatureTierOverrides;
 		public static ConfigEntry<string> FearlessCreatures;
 		public static ConfigEntry<string> NeverFleeCreatures;
+		public static ConfigEntry<string> NotHuntedAnimals;
 		public static ConfigEntry<bool> AutoNeverFleeFoodAnimals;
-		public static ConfigEntry<int> FoodAnimalMaxTier;
 
 		public static ConfigEntry<bool> ShowFearOnNameplate;
 		public static ConfigEntry<bool> ColourNames;
@@ -148,11 +149,12 @@ namespace MarkOfOden.Config
 				"Master switch. When off, every creature behaves exactly as it does in vanilla.");
 
 			CautiousThreshold = Bind(SectionFear, "Cautious threshold", 1,
-				"Threat minus courage at or above this makes a creature cautious: it stops treating you as prey, but holds its ground.");
-			AfraidThreshold = Bind(SectionFear, "Afraid threshold", 3,
-				"Threat minus courage at or above this makes a creature actively flee.");
-			TerrifiedThreshold = Bind(SectionFear, "Terrified threshold", 5,
-				"Threat minus courage at or above this makes a creature cower when it is cornered or you are on top of it.");
+				"Threat minus courage at or above this and a creature leaves you alone: it will not pick a fight with you, though it defends itself if you start one. " +
+				"This is the only thing your standing decides. Whether a creature runs is decided during a fight, under Morale, and never at the sight of you.");
+			NightCourage = Bind(SectionFear, "Night courage", 2f,
+				"Courage every creature gains between dusk and dawn, so the night stays dangerous however feared you are by day. " +
+				"At the default, something that would leave you alone by day may come for you after dark, and something that would break early in a fight holds on longer. " +
+				"0 makes the night no different from the day.");
 			StarCourage = Bind(SectionFear, "Star courage", 1f,
 				"Courage added per star. A 2-star creature gets this once, a 3-star twice.");
 			StarCourageMax = Bind(SectionFear, "Star courage cap", 2f,
@@ -175,29 +177,33 @@ namespace MarkOfOden.Config
 			ReevaluateInterval = Bind(SectionFear, "Re-evaluate interval", 0.5f,
 				"Seconds between fear re-evaluations for a single creature. Raise this if you see a frame time cost in large fights.");
 			RunWhenAfraid = Bind(SectionFear, "Run when afraid", true,
-				"Alert a fleeing creature so it sprints away instead of strolling. Vanilla flee speed follows the alerted flag.");
+				"A creature whose morale breaks sprints away instead of strolling. Vanilla flee speed follows the alerted flag.");
 			RaidCreaturesAlwaysAttack = Bind(SectionFear, "Raid creatures always attack", true,
 				"Creatures spawned by an active raid ignore fear entirely. Turning this off lets raids break and run, which trivialises them.");
 			BossFightRadius = Bind(SectionFear, "Boss fight radius", 60f,
 				"Creatures within this distance of an alerted boss ignore fear, so the adds a boss summons keep fighting instead of losing interest partway through. " +
 				"Set to 0 to turn this off and let them break like anything else.");
 			CorneredCreaturesFightBack = Bind(SectionFear, "Cornered creatures fight back", true,
-				"A creature you hit defends itself, however frightened it is, instead of having to be chased down. " +
-				"Turn this off and a fleeing creature keeps fleeing while you shoot it in the back.");
+				"A creature you hit defends itself, even one that was leaving you alone. " +
+				"Turn this off and a creature that leaves you alone goes on doing so while you hit it - which also means it never breaks, since it never fights.");
 			HelpCallRadius = Bind(SectionFear, "Help call radius", 15f,
 				"When you pick a fight with a creature, others of its own kind within this distance of it join in, rather than standing and watching a battle beside them. " +
 				"Measured from the creature you hit, so shooting one from a distance rallies its packmates and not whatever is near you. Set to 0 to let them ignore it.");
 			RetaliationWindow = Bind(SectionFear, "Retaliation window", 10f,
 				"Seconds a creature stays angry after being hit. Tracked per attacker, so one player's fight does not enrage it at everyone.");
 
-			EnableCower = Bind(SectionCower, "Enable cower", true,
-				"Terrified creatures that cannot escape stop dead and face you instead of running into scenery.");
-			CowerRange = Bind(SectionCower, "Cower range", 4f,
-				"A terrified creature cowers rather than flees when you are this close.");
-			CowerStaggerInterval = Bind(SectionCower, "Cower flinch interval", 0f,
-				"Seconds between flinches while cowering, or 0 for none. The flinch borrows the stagger recoil, because vanilla has no cower animation, but that recoil " +
-				"is what a creature plays when a blow lands: it reads as stumbling rather than cringing, and it does so on every creature, not just the small ones. " +
-				"Standing rooted and staring at you is the better half of cowering anyway, so the flinch is off unless you want it.");
+			MoraleEnabled = Bind(SectionMorale, "Creatures can break", true,
+				"Let a creature that is losing a fight to someone who outranks it break and run. Nothing ever runs at the sight of you; this only happens once " +
+				"a fight is going badly for it. Hunted animals never break. Turn this off and everything that fights you fights to the end.");
+			MoraleBreakHealth = Bind(SectionMorale, "Break health", 0.15f,
+				"Health fraction at which a creature breaks when you outrank it by one step past the point where it leaves you alone. 0.15 is 15% of its health.");
+			MoraleBreakStep = Bind(SectionMorale, "Break step", 0.1f,
+				"Added to the break health for every further step you outrank it, so the more dangerous you are to it, the sooner it breaks. " +
+				"Courage is read as the fight goes on, so packmates dying around it bring the break closer, and the night pushes it further away.");
+			MoraleBreakCap = Bind(SectionMorale, "Break health cap", 0.5f,
+				"The most the break health can reach, however far you outrank a creature. At 0.5 nothing breaks while it still has more than half its health.");
+			MoraleRunTime = Bind(SectionMorale, "Run time", 12f,
+				"Seconds a broken creature runs before it settles. Once settled it is done with the fight and leaves you alone; hit it again and it breaks again at once.");
 
 			NotorietyThresholds = Bind(SectionMark, "Notoriety thresholds", "25,100,400",
 				"Personal kill counts of a single species at which that species starts to recognise you. Each step adds 1 to your threat against that species only. " +
@@ -220,16 +226,21 @@ namespace MarkOfOden.Config
 				"Comma separated names that never feel fear, whatever your mark. Same name format as the tier overrides. " +
 				"Nothing is listed by default; see Never flee creatures for the gentler option that food animals use.");
 			AutoNeverFleeFoodAnimals = Bind(SectionTables, "Food animals never flee", true,
-				"Work out which creatures players hunt for food from their own drop tables, and stop those breaking and running. " +
-				"Derived from game data rather than a fixed list, so it covers creatures this mod has never heard of. Run the console command 'moo dump' to see what it found.");
-			FoodAnimalMaxTier = Bind(SectionTables, "Food animal max tier", 1,
-				"How weak a creature must be to count as prey rather than a threat that happens to drop meat. " +
-				"At the default, boar and neck qualify while wolf, lox and serpent do not, so hunting stays easy without the dangerous ones losing their nerve.");
+				"Work out which creatures players hunt for food from their own drop tables, and treat every one as a hunted animal: it may leave you alone, " +
+				"but provoked it fights to the end and never breaks, so hunting stays a fight rather than a chase. Boar and neck, wolf, lox and serpent alike. " +
+				"Derived from game data rather than a fixed list, so it covers creatures this mod has never heard of. Run the console command 'moo dump' to see what it found. " +
+				"Deer and hare are not affected either way: the game has them run from everything, and this mod leaves them alone.");
 			NeverFleeCreatures = Bind(SectionTables, "Never flee creatures", "$enemy_moose, $enemy_seal",
-				"Extra comma separated names that may lose interest in you but never break and run, on top of any found automatically above. " +
-				"Moose and seal are listed because players hunt them, but the Deep North rates every creature as dangerous, so they are not detected automatically. Their young inherit this. " +
+				"Extra comma separated names to treat as hunted animals, which fight to the end and never break, on top of any found automatically above. " +
+				"Every creature's name is listed in picsoul.valheim.markofoden.creatures.txt, beside this file. " +
+				"Moose and seal are listed in case their meat is not recognised as food by the drop-table check. Their young inherit this. " +
 				"A creature that bolts turns hunting into a chase, while one that charges a Viking who has killed every boss looks absurd; " +
 				"ignoring you is the only reading that is neither. They still defend themselves if you hit them.");
+			NotHuntedAnimals = Bind(SectionTables, "Not hunted animals", "Seeker, SeekerBrute, SeekerBrood, GoblinDeepNorth",
+				"Comma separated names that drop food but are not hunted animals, so they break like any other creature instead of fighting to the end. " +
+				"The food check reads drop tables, and a few monsters drop something a cooking station can use: the Seekers carry royal jelly, and the Deep North Fuling " +
+				"carries meat. Nobody hunts either for dinner. Prefab names or tokens both work; every creature's name is listed in " +
+				"picsoul.valheim.markofoden.creatures.txt, beside this file.");
 
 			ShowFearOnNameplate = Bind(SectionDisplay, "Show fear on nameplate", true,
 				"Colour a creature's name and add a symbol to it according to how it feels about you. " +
@@ -246,17 +257,19 @@ namespace MarkOfOden.Config
 				"you walk up to on purpose and where the mistake costs most; Armed marks everything with an attack, which is accurate but lights up most of the world; " +
 				"Never restores the older behaviour. Creatures with no attack at all, like deer and hare, are never marked under any of these.");
 			FearSymbols = Bind(SectionDisplay, "Fear markers", "\u25BC,\u25BC\u25BC,\u25BC\u25BC\u25BC,\u25B2,\u25B2",
-				"Markers for cautious, afraid, terrified, cornered and unafraid, in that order. Down means the creature is putting distance between it and you and up " +
-				"means it is not, so direction alone says which way this is about to go; the first three repeat one character so the marker also reads as a scale. " +
+				"Markers for wary, broken, (unused), provoked and unafraid, in that order. Down means the creature is keeping away from you and up " +
+				"means it is not, so direction alone says which way this is about to go. The third entry belonged to a panicked state that no longer exists and is kept only " +
+				"so older lists still line up. " +
 				"If your font cannot draw the triangles they will come out as empty boxes, in which case v,vv,vvv,^,^ says the same thing in plain ASCII. " +
 				"Leave an entry empty for colour only.");
-			FearLabels = Bind(SectionDisplay, "Fear words", "wary,fleeing,panicked,cornered,unafraid",
-				"Words for cautious, afraid, terrified, cornered and unafraid, in that order. They name what the creature is about to do rather than what it feels, because " +
-				"that is the part you can act on. Cornered and unafraid share a colour and a marker because they amount to the same thing for you; only the word separates " +
+			FearLabels = Bind(SectionDisplay, "Fear words", "wary,fleeing,panicked,provoked,unafraid",
+				"Words for wary, broken, (unused), provoked and unafraid, in that order. They name what the creature is about to do rather than what it feels, because " +
+				"that is the part you can act on: wary leaves you alone, fleeing has broken and is running, provoked is fighting you because you started it. " +
+				"Provoked and unafraid share a colour and a marker because they amount to the same thing for you; only the word separates " +
 				"the one that is angry from the one that never cared. Leave an entry empty to show nothing but the marker for that one state.");
 			FearColours = Bind(SectionDisplay, "Fear colours", "#9BD46A,#5FC9D6,#B8DCEA,#E8A33C,#E8A33C",
-				"Colours for those five states. The three fleeing ones run green to cyan to pale ice, so the colour says how far gone a creature is without counting " +
-				"markers; the last two share the one warm colour, because they are the two that will fight you. Every state is the same rung on all three scales at once, " +
+				"Colours for those five states. Wary is green and a broken creature cyan, the cool colours for the two that will not fight you; " +
+				"the last two share the one warm colour, because they are the two that will. Every state is the same rung on all three scales at once, " +
 				"so there is no combination to decode, and any one of colour, marker or word is enough on its own.");
 			NameplateDistance = Bind(SectionDisplay, "Nameplate distance", 0f,
 				"Vanilla only shows name plates within 10m, which is late to learn that something is afraid of you. " +
@@ -315,8 +328,11 @@ namespace MarkOfOden.Config
 			MoveDefault(FearLabels, "wary,fleeing,panicked,cornered", "wary,fleeing,panicked,cornered,unafraid");
 			MoveDefault(FearColours, "#9BD46A,#5FC9D6,#B8DCEA,#E8A33C", "#9BD46A,#5FC9D6,#B8DCEA,#E8A33C,#E8A33C");
 
-			// The cower flinch reused the stagger recoil, which is the hurt animation and looks it.
-			MoveDefaultValue(CowerStaggerInterval, 2.5f, 0f);
+			// Version 6 moved the afraid and terrified thresholds apart, and version 7 retired them along
+			// with cowering: nothing runs on sight any more, so only morale decides who runs.
+
+			// A creature you provoked is angry, not cornered - and nothing is cornered any more.
+			MoveDefault(FearLabels, "wary,fleeing,panicked,cornered,unafraid", "wary,fleeing,panicked,provoked,unafraid");
 
 			ConfigVersion.Value = CurrentConfigVersion;
 			Plugin.Log.LogInfo("Config brought up to date from version " + from + " to " + CurrentConfigVersion + ".");

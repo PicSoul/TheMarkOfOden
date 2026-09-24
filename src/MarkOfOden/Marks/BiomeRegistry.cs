@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using MarkOfOden.Fear;
 using UnityEngine;
@@ -106,7 +106,89 @@ namespace MarkOfOden.Marks
 			{ "Seal", Heightmap.Biome.DeepNorth },
 
 			// Ocean
-			{ "Serpent", Heightmap.Biome.Ocean }
+			{ "Serpent", Heightmap.Biome.Ocean },
+
+			// ---- Measured rather than remembered ------------------------------------------------
+			// Everything below was placed by 'moo creatures', which follows where the game actually
+			// spawns each creature. The entries above were written by hand and left gaps, and a
+			// creature with no entry fell back to a guess from its faction - which put the Aspects in
+			// the Meadows and the Deep North's prisoners in the Mistlands and the Plains, where the
+			// viewer's spoiler guard would have shown them early. Where the scan found a creature only
+			// in a dungeon room, or only through a raid that runs anywhere, the biome comes from the
+			// place that dungeon or that quest belongs to.
+
+			// Meadows and Black Forest
+			{ "Skeleton_Meadows", Heightmap.Biome.Meadows },
+			{ "Skeleton_Meadows_noarcher", Heightmap.Biome.Meadows },
+			{ "Bjorn", Heightmap.Biome.BlackForest },
+			{ "Bjorn_sleeping", Heightmap.Biome.BlackForest },
+			{ "Ghost_sleeping", Heightmap.Biome.BlackForest },
+			{ "TentaRoot", Heightmap.Biome.BlackForest },
+			{ "Skeleton_Hildir", Heightmap.Biome.BlackForest },
+			{ "Skeleton_Hildir_nochest", Heightmap.Biome.BlackForest },
+
+			// Swamp
+			{ "Skeleton_Swamps", Heightmap.Biome.Swamp },
+			{ "Writhan", Heightmap.Biome.Swamp },
+			{ "BogWitchKvastur", Heightmap.Biome.Swamp },
+
+			// Mountain
+			{ "Wolf_cub", Heightmap.Biome.Mountain },
+			{ "Skeleton_Mountains", Heightmap.Biome.Mountain },
+			{ "Fenring_Cultist_Hildir", Heightmap.Biome.Mountain },
+			{ "Fenring_Cultist_Hildir_nochest", Heightmap.Biome.Mountain },
+
+			// Plains
+			{ "GoblinArcher", Heightmap.Biome.Plains },
+			{ "Lox_Calf", Heightmap.Biome.Plains },
+			{ "Unbjorn", Heightmap.Biome.Plains },
+			{ "GoblinBruteBros", Heightmap.Biome.Plains },
+			{ "GoblinBruteBros_nochest", Heightmap.Biome.Plains },
+			{ "GoblinShaman_Hildir", Heightmap.Biome.Plains },
+			{ "GoblinShaman_Hildir_nochest", Heightmap.Biome.Plains },
+
+			// Mistlands
+			{ "Mistile", Heightmap.Biome.Mistlands },
+
+			// Ashlands
+			{ "Asksvin_hatchling", Heightmap.Biome.AshLands },
+			{ "Charred_Archer_Fader", Heightmap.Biome.AshLands },
+			{ "Charred_Melee_Fader", Heightmap.Biome.AshLands },
+			{ "Charred_Melee_Dyrnwyn", Heightmap.Biome.AshLands },
+			{ "DvergerAshlands", Heightmap.Biome.AshLands },
+			{ "Morgen_NonSleeping", Heightmap.Biome.AshLands },
+
+			// Deep North
+			{ "Moose_calf", Heightmap.Biome.DeepNorth },
+			{ "Seal_Pup", Heightmap.Biome.DeepNorth },
+			{ "Barka", Heightmap.Biome.DeepNorth },
+			{ "Elaking", Heightmap.Biome.DeepNorth },
+			{ "ElakingLantern", Heightmap.Biome.DeepNorth },
+			{ "ElakingMole", Heightmap.Biome.DeepNorth },
+			{ "FallenWarrior", Heightmap.Biome.DeepNorth },
+			{ "Greydwarf_Frozen", Heightmap.Biome.DeepNorth },
+			{ "Greydwarf_Shaman_Frozen", Heightmap.Biome.DeepNorth },
+			{ "JotunWarrior", Heightmap.Biome.DeepNorth },
+			{ "JotunWarriorDualWield", Heightmap.Biome.DeepNorth },
+			{ "JotunWitch", Heightmap.Biome.DeepNorth },
+			{ "ShadowPerson", Heightmap.Biome.DeepNorth },
+			{ "Skeleton_DeepNorth", Heightmap.Biome.DeepNorth },
+			{ "TrollFrost", Heightmap.Biome.DeepNorth },
+			{ "BlobMork", Heightmap.Biome.DeepNorth },
+			{ "BlobMorkMini", Heightmap.Biome.DeepNorth },
+			{ "DvergerDeepNorth", Heightmap.Biome.DeepNorth },
+			{ "GoblinDeepNorth", Heightmap.Biome.DeepNorth },
+			{ "Tendril", Heightmap.Biome.DeepNorth },
+			{ "Aspect_Eikthyr", Heightmap.Biome.DeepNorth },
+			{ "Aspect_Elder", Heightmap.Biome.DeepNorth },
+			{ "Aspect_Bonemass", Heightmap.Biome.DeepNorth },
+			{ "Aspect_Moder", Heightmap.Biome.DeepNorth },
+			{ "Aspect_Yagluth", Heightmap.Biome.DeepNorth },
+			{ "Aspect_SeekerQueen", Heightmap.Biome.DeepNorth },
+			{ "Aspect_Fader", Heightmap.Biome.DeepNorth },
+			{ "Aspect_TentaRoot", Heightmap.Biome.DeepNorth },
+			{ "BlobAspect", Heightmap.Biome.DeepNorth },
+			{ "Skeleton_aspect", Heightmap.Biome.DeepNorth }
 		};
 
 		public static string BiomeName(Heightmap.Biome biome)
@@ -232,6 +314,15 @@ namespace MarkOfOden.Marks
 			if (CreatureBiomeMap.TryGetValue(clean, out Heightmap.Biome cleanMatch))
 			{
 				return cleanMatch;
+			}
+
+			// A creature another mod adds has no entry above, but if the world spawns it, where it
+			// spawns is known - and is a far better answer than a guess from its faction.
+			string spawnPrefab = CreatureTiers.GetPrefabForToken(creatureName);
+			Heightmap.Biome spawned = CreatureTiers.SpawnBiomeOf(string.IsNullOrEmpty(spawnPrefab) ? creatureName : spawnPrefab);
+			if (spawned != Heightmap.Biome.None)
+			{
+				return spawned;
 			}
 
 			// Fallback: check ZNetScene prefab character faction

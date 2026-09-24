@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using MarkOfOden.Config;
 using UnityEngine;
 
@@ -24,7 +24,7 @@ namespace MarkOfOden.Fear
 		// meanings are avoided: red is a bad state, orange a value, yellow a keybind.
 		private static readonly string[] DefaultColours = { "#9BD46A", "#5FC9D6", "#B8DCEA", "#E8A33C", "#E8A33C" };
 
-		private const int CorneredState = 3;
+		private const int ProvokedState = 3;
 		private const int UnafraidState = 4;
 
 		// Direction carries the meaning: down for a creature putting distance between it and you, up
@@ -103,9 +103,11 @@ namespace MarkOfOden.Fear
 		}
 
 		/// <summary>
-		/// The display state: 0 cautious, 1 afraid, 2 terrified, 3 cornered, or -1 for nothing to show.
+		/// The display state: 0 wary, 1 broken and running, 3 provoked, 4 unafraid, or -1 for nothing to
+		/// show. State 2 belonged to a panicked state that no longer exists; its slot is kept so the lists
+		/// in older configs still line up.
 		///
-		/// Cornered is its own state rather than being lumped in with normal. A creature fighting back
+		/// Provoked is its own state rather than being lumped in with normal. A creature fighting back
 		/// because you hit it behaves exactly like an unafraid one, so without marking it an unmarked
 		/// name plate would mean both "does not care about you" and "is angry at you right now". It is
 		/// the one state whose marker points the other way, which is what makes it read as the opposite
@@ -144,7 +146,7 @@ namespace MarkOfOden.Fear
 			}
 			else if (immunity == FearEvaluator.Immunity.Retaliating)
 			{
-				cached.Level = CorneredState;
+				cached.Level = ProvokedState;
 			}
 			else if (MarkAsUnafraid(creature, immunity))
 			{

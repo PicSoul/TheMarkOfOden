@@ -5,7 +5,7 @@
     <AssemblyName>MarkOfOden</AssemblyName>
     <RootNamespace>MarkOfOden</RootNamespace>
     <Product>The Mark of Oden</Product>
-    <Version>0.2.0</Version>
+    <Version>0.4.0</Version>
     <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
     <EnableDefaultCompileItems>true</EnableDefaultCompileItems>
   </PropertyGroup>
@@ -25,6 +25,11 @@
     </Reference>
     <Reference Include="assembly_utils">
       <HintPath>$(ValheimManaged)\assembly_utils.dll</HintPath>
+      <Publicize>true</Publicize>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="SoftReferenceableAssets">
+      <HintPath>$(ValheimManaged)\SoftReferenceableAssets.dll</HintPath>
       <Publicize>true</Publicize>
       <Private>false</Private>
     </Reference>

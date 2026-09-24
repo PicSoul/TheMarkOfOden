@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using HarmonyLib;
 using MarkOfOden.Config;
 using MarkOfOden.Fear;
@@ -54,7 +54,7 @@ namespace MarkOfOden.Patches
 		private static void Postfix()
 		{
 			FearEvaluator.ClearAll();
-			CowerState.ClearAll();
+			Morale.ClearAll();
 			FearDisplay.ClearAll();
 			BossFight.Clear();
 			MarkSync.ClearCache();
@@ -93,7 +93,7 @@ namespace MarkOfOden.Patches
 			if (__instance is MonsterAI ai)
 			{
 				FearEvaluator.Forget(ai);
-				CowerState.Forget(ai);
+				Morale.Forget(ai);
 				FearDisplay.Forget(ai);
 			}
 		}

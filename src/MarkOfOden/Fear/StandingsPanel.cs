@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
@@ -519,9 +519,32 @@ namespace MarkOfOden.Fear
 				progress = $"Max Notoriety Achieved ({kills} kills)";
 			}
 
-			// Fear evaluation against local player
+			// Judged by the same rules the creatures themselves use, rather than worked out again here.
+			// Stars and pack courage belong to individual creatures rather than the species, so they are
+			// left out; the night is not, because it applies to every one of them at once.
 			float threat = markTier + notoriety;
-			float delta = threat - baseTier;
+			float night = FearEvaluator.NightCourage();
+			float delta = threat - baseTier - night;
+
+			bool leavesYouAlone = FearEvaluator.LevelFor(delta) >= FearLevel.Cautious;
+			bool hunted = CreatureTiers.NeverFleesToken(token);
+			float breakPoint = hunted ? 0f : Morale.BreakPointFor(delta);
+
+			string ifProvoked;
+			if (hunted)
+			{
+				ifProvoked = "Provoked, it fights to the end: hunted animals never break.";
+			}
+			else if (breakPoint > 0f && ModConfig.MoraleEnabled.Value)
+			{
+				ifProvoked = $"Provoked, it fights back, and breaks and runs below {breakPoint * 100f:0}% health.";
+			}
+			else
+			{
+				ifProvoked = "Provoked, it fights to the end.";
+			}
+
+			string nightNote = night > 0f ? " Bolder now that it is night." : string.Empty;
 
 			string badge;
 			string detail;
@@ -531,30 +554,23 @@ namespace MarkOfOden.Fear
 				badge = "<color=#FFA500>▲ Normal (Player Opted Out)</color>";
 				detail = "Nothing fears you while opted out of The Mark of Oden.";
 			}
-			else if (baseTier == 0 && (token.Equals("Deer", StringComparison.OrdinalIgnoreCase) || token.Equals("Hare", StringComparison.OrdinalIgnoreCase)))
+			else if (!CreatureTiers.IsArmedToken(token))
 			{
+				// Asked of the creature's own attacks rather than matched against a name. The check
+				// this replaces compared the token to "Deer", but tokens look like $enemy_deer, so it
+				// never matched anything.
 				badge = "<color=#94A3B8>○ Harmless Prey</color>";
-				detail = "Gentle creature with no combat attacks.";
+				detail = "Has no way to fight. Runs from everything, as it always has.";
 			}
-			else if (delta >= ModConfig.TerrifiedThreshold.Value)
+			else if (leavesYouAlone)
 			{
-				badge = "<color=#B8DCEA><b>▼▼▼ Panicked (Terrified)</b></color>";
-				detail = $"Threat exceeds courage by {delta:0}. Cowers or bolts in blind panic.";
-			}
-			else if (delta >= ModConfig.AfraidThreshold.Value)
-			{
-				badge = "<color=#5FC9D6><b>▼▼ Fleeing (Afraid)</b></color>";
-				detail = $"Threat exceeds courage by {delta:0}. Actively sprints away on sight.";
-			}
-			else if (delta >= ModConfig.CautiousThreshold.Value)
-			{
-				badge = "<color=#9BD46A><b>▼ Wary (Cautious)</b></color>";
-				detail = $"Threat exceeds courage by {delta:0}. Holds ground, refuses to attack unprovoked.";
+				badge = "<color=#9BD46A><b>▼ Wary (Leaves you alone)</b></color>";
+				detail = $"Threat exceeds courage by {delta:0}. Will not pick a fight with you. {ifProvoked}{nightNote}";
 			}
 			else
 			{
 				badge = "<color=#E8A33C>▲ Unafraid / Aggressive</color>";
-				detail = $"Courage ({baseTier}) withstands threat ({threat:0}). Attacks normally.";
+				detail = $"Courage ({baseTier + night:0}) withstands threat ({threat:0}). Attacks you on sight and fights to the end.{nightNote}";
 			}
 
 			return new CreatureRowData
@@ -607,7 +623,7 @@ namespace MarkOfOden.Fear
 
 				foreach (string creature in biomeCreatures[i])
 				{
-					if (processed.Contains(creature))
+					if (processed.Contains(creature) || CreatureCatalog.IsUnused(creature))
 					{
 						continue;
 					}

@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Text;
 using MarkOfOden.Compat;
 using MarkOfOden.Config;
@@ -56,6 +56,7 @@ namespace MarkOfOden.Fear
 
 			MarkAngry(ai, attacker);
 			CallForHelp(ai, attacker);
+			Morale.NoteHurt(ai);
 		}
 
 		private static void MarkAngry(MonsterAI ai, Player attacker)
@@ -166,11 +167,33 @@ namespace MarkOfOden.Fear
 		}
 
 		/// <summary>True while this creature is still angry at this particular player.</summary>
-		private static bool IsRetaliatingAgainst(MonsterAI ai, Player player)
+		public static bool IsRetaliatingAgainst(MonsterAI ai, Player player)
 		{
 			return LastHurtAt.TryGetValue(ai, out Dictionary<Player, float> byPlayer)
 				&& byPlayer.TryGetValue(player, out float hurtAt)
 				&& Time.time - hurtAt <= ModConfig.RetaliationWindow.Value;
+		}
+
+		/// <summary>
+		/// Ends a creature's fight with one player. Used when a creature that broke has settled: it ran
+		/// because it was losing, and coming back for more the moment it stopped running would undo that.
+		/// </summary>
+		public static void ForgetAnger(MonsterAI ai, Player player)
+		{
+			if (ai == null || player == null)
+			{
+				return;
+			}
+
+			if (LastHurtAt.TryGetValue(ai, out Dictionary<Player, float> byPlayer))
+			{
+				byPlayer.Remove(player);
+			}
+
+			if (Decisions.TryGetValue(ai, out CachedDecision cached))
+			{
+				cached.NextEvaluation = 0f;
+			}
 		}
 
 		public static void Forget(MonsterAI ai)
@@ -233,21 +256,54 @@ namespace MarkOfOden.Fear
 		{
 			immunity = Immunity.None;
 
+			// A broken creature is running from whoever broke it, and from anyone else on the way.
+			if (Morale.IsBroken(ai))
+			{
+				return FearLevel.Broken;
+			}
+
+			if (!Standing(ai, player, out immunity, out float delta))
+			{
+				return FearLevel.Normal;
+			}
+
+			// Anything you hit defends itself, however little it wanted the fight. Whether it then holds
+			// or breaks is Morale's question, asked while the fight goes on.
+			if (ModConfig.CorneredCreaturesFightBack.Value && IsRetaliatingAgainst(ai, player))
+			{
+				immunity = Immunity.Retaliating;
+				return FearLevel.Normal;
+			}
+
+			return LevelFor(delta);
+		}
+
+		/// <summary>
+		/// How far this player outranks this creature: threat minus courage, with every reason a creature
+		/// might be exempt checked first. Returns false, with the reason, if it is exempt; retaliation is
+		/// not one of those reasons, so this still answers in the middle of a fight, which is exactly when
+		/// Morale needs to ask.
+		/// </summary>
+		public static bool Standing(MonsterAI ai, Player player, out Immunity immunity, out float delta)
+		{
+			immunity = Immunity.None;
+			delta = 0f;
+
 			if (!ModConfig.Enabled.Value)
 			{
 				immunity = Immunity.Disabled;
-				return FearLevel.Normal;
+				return false;
 			}
 
 			if (!CreatureTiers.Ready)
 			{
 				immunity = Immunity.TablesNotReady;
-				return FearLevel.Normal;
+				return false;
 			}
 
 			if (ai == null || player == null || ai.m_character == null)
 			{
-				return FearLevel.Normal;
+				return false;
 			}
 
 			Character creature = ai.m_character;
@@ -255,20 +311,20 @@ namespace MarkOfOden.Fear
 			if (creature.IsTamed() || creature.IsPlayer())
 			{
 				immunity = Immunity.Tamed;
-				return FearLevel.Normal;
+				return false;
 			}
 
 			if (creature.IsBoss() || creature.GetFaction() == Character.Faction.Boss)
 			{
 				immunity = Immunity.Boss;
-				return FearLevel.Normal;
+				return false;
 			}
 
 			// Raids must not break. A raid whose creatures run away is not a raid.
 			if (ModConfig.RaidCreaturesAlwaysAttack.Value && ai.IsEventCreature() && RandEventSystem.HaveActiveEvent())
 			{
 				immunity = Immunity.Raid;
-				return FearLevel.Normal;
+				return false;
 			}
 
 			// Creatures fighting alongside a boss keep fighting. A boss whose summons lose interest
@@ -276,20 +332,20 @@ namespace MarkOfOden.Fear
 			if (BossFight.IsInBossFight(creature.transform.position))
 			{
 				immunity = Immunity.BossFight;
-				return FearLevel.Normal;
+				return false;
 			}
 
 			// Anything told to hunt the player is on a mission: event hunters and scripted attackers.
 			if (ai.HuntPlayer())
 			{
 				immunity = Immunity.Hunting;
-				return FearLevel.Normal;
+				return false;
 			}
 
 			if (CreatureTiers.IsFearless(creature))
 			{
 				immunity = Immunity.ConfiguredFearless;
-				return FearLevel.Normal;
+				return false;
 			}
 
 			// An animal that has taken your food is already being tamed. Taming only advances while it
@@ -299,42 +355,47 @@ namespace MarkOfOden.Fear
 			if (ai.m_tamable != null && !ai.m_tamable.IsHungry())
 			{
 				immunity = Immunity.BeingTamed;
-				return FearLevel.Normal;
+				return false;
 			}
 
 			float threat = Threat(player, creature);
 			if (threat <= 0f)
 			{
 				immunity = Immunity.NoMark;
-				return FearLevel.Normal;
+				return false;
 			}
 
-			float delta = threat - Courage(ai, creature);
+			delta = threat - Courage(ai, creature);
+			return true;
+		}
 
-			FearLevel level;
-			if (delta >= ModConfig.TerrifiedThreshold.Value) level = FearLevel.Terrified;
-			else if (delta >= ModConfig.AfraidThreshold.Value) level = FearLevel.Afraid;
-			else if (delta >= ModConfig.CautiousThreshold.Value) level = FearLevel.Cautious;
-			else level = FearLevel.Normal;
+		/// <summary>
+		/// How a gap between threat and courage reads as a feeling. The one place this is decided, so
+		/// the standings panel cannot drift from what creatures actually do.
+		/// </summary>
+		public static FearLevel LevelFor(float delta)
+		{
+			// Standing decides only whether a creature picks a fight. Running is Morale's, and only ever
+			// happens in a fight, so no gap between you, however wide, makes anything run on sight.
+			return delta >= ModConfig.CautiousThreshold.Value ? FearLevel.Cautious : FearLevel.Normal;
+		}
 
-			// Some creatures may lose interest in you but never break and run. A boar that bolts turns
-			// hunting into a chase, and a boar that charges a Yagluth-slayer looks absurd; standing
-			// there ignoring you is the only reading that is neither.
-			if (level > FearLevel.Cautious && CreatureTiers.NeverFlees(creature))
-			{
-				level = FearLevel.Cautious;
-			}
-
-			// Anything you hit defends itself, however frightened it was a moment ago. Without this,
-			// every creature that fears you has to be chased down to be killed, which makes hunting
-			// for meat and hides a chore exactly when your mark is high enough to make it trivial.
-			if (ModConfig.CorneredCreaturesFightBack.Value && IsRetaliatingAgainst(ai, player))
-			{
-				immunity = Immunity.Retaliating;
-				return FearLevel.Normal;
-			}
-
-			return level;
+		/// <summary>
+		/// Extra nerve every creature finds after dark.
+		///
+		/// Your name carries less weight when nothing can see who you are. It is added to courage rather
+		/// than taken from threat so that it reads the same way everywhere, and so that it lands on every
+		/// creature equally: whatever would have ignored you by day may now come for you, and whatever
+		/// would have fled may now only keep its distance. Nothing is made braver than it would be
+		/// without the mod - courage above threat is simply vanilla behaviour.
+		///
+		/// EnvMan.IsNight reads a flag the game already keeps for the time of day, which on a server is
+		/// shared by everyone, so this costs nothing and every client agrees on it. Decisions are
+		/// re-evaluated every fraction of a second, so dusk and dawn take hold on their own.
+		/// </summary>
+		public static float NightCourage()
+		{
+			return EnvMan.IsNight() ? Mathf.Max(0f, ModConfig.NightCourage.Value) : 0f;
 		}
 
 		public static float Threat(Player player, Character creature)
@@ -356,6 +417,8 @@ namespace MarkOfOden.Fear
 
 			// A creature another mod has empowered is not the creature its prefab describes.
 			courage += CllcCompat.ExtraCourage(creature);
+
+			courage += NightCourage();
 
 			return courage;
 		}
@@ -441,11 +504,28 @@ namespace MarkOfOden.Fear
 				+ " + stars " + Mathf.Min(Mathf.Max(0, creature.GetLevel() - 1) * ModConfig.StarCourage.Value, ModConfig.StarCourageMax.Value)
 				+ " + pack " + PackBonus(ai, creature)
 				+ (CllcCompat.ExtraCourage(creature) > 0f ? " + empowered " + CllcCompat.ExtraCourage(creature) : string.Empty)
+				+ (NightCourage() > 0f ? " + night " + NightCourage() : string.Empty)
 				+ " = " + Courage(ai, creature));
-			builder.AppendLine("  delta   = " + (Threat(player, creature) - Courage(ai, creature))
-				+ " (cautious " + ModConfig.CautiousThreshold.Value
-				+ ", afraid " + ModConfig.AfraidThreshold.Value
-				+ ", terrified " + ModConfig.TerrifiedThreshold.Value + ")");
+			float gap = Threat(player, creature) - Courage(ai, creature);
+			builder.AppendLine("  delta   = " + gap + " (leaves you alone at " + ModConfig.CautiousThreshold.Value + ")");
+
+			string morale;
+			if (CreatureTiers.NeverFlees(creature))
+			{
+				morale = "hunted animal - never breaks, fights to the end";
+			}
+			else if (Morale.BreakPointFor(gap) <= 0f)
+			{
+				morale = "does not outrank you - never breaks, fights to the end";
+			}
+			else
+			{
+				morale = "breaks below " + (Morale.BreakPointFor(gap) * 100f).ToString("0") + "% health";
+			}
+
+			builder.AppendLine("  if provoked: " + morale
+				+ (Morale.IsBroken(ai) ? "  [BROKEN, running]" : string.Empty));
+			builder.AppendLine("  health: " + (creature.GetHealthPercentage() * 100f).ToString("0") + "%   night: " + EnvMan.IsNight());
 			builder.AppendLine("  senses the player: " + ai.CanSenseTarget(player));
 			return builder.ToString();
 		}
