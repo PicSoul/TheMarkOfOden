@@ -1,5 +1,15 @@
 ﻿# Changelog
 
+## 0.4.1
+
+### Fixed
+
+- No more "Character.GetHoverName postfix failed" errors in the log when leaving a world. As the game
+  tears a world down, its creatures lose their network data for a moment; anything asking for a
+  creature's name just then - a map or radar mod drawing creature names, for instance - made the fear
+  label check whether it was a raid creature, which reads that data, and it failed once per creature
+  still loaded. A creature in that state is now simply treated as no threat. Nothing in play changes.
+
 ## 0.4.0
 
 ### Changed

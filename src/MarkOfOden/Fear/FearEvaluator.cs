@@ -306,6 +306,15 @@ namespace MarkOfOden.Fear
 				return false;
 			}
 
+			// A creature being torn down - as you leave a world, or as it unloads - has lost its
+			// network data, and the checks below read from it. Asked about then, by anything
+			// wanting its name, it is no threat to anyone.
+			ZNetView view = ai.GetComponent<ZNetView>();
+			if (view == null || !view.IsValid())
+			{
+				return false;
+			}
+
 			Character creature = ai.m_character;
 
 			if (creature.IsTamed() || creature.IsPlayer())
