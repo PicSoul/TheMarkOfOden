@@ -17,7 +17,7 @@ namespace MarkOfOden
 	{
 		public const string PluginGuid = "picsoul.valheim.markofoden";
 		public const string PluginName = "TheMarkOfOden";
-		public const string PluginVersion = "0.4.1";
+		public const string PluginVersion = "0.4.2";
 
 		/// <summary>
 		/// A server running this mod accepts only clients running the same version of it, and turns
@@ -47,6 +47,12 @@ namespace MarkOfOden
 		private void Awake()
 		{
 			Log = Logger;
+
+			// Every word a player reads comes from translations/<Language>.yml, or from a
+			// "TheMarkOfOden.<Language>.yml" a translator drops anywhere in BepInEx - and again
+			// whenever the language is changed in the settings.
+			LocalizationManager.Localizer.Load();
+			Localization.OnLanguageChange += LocalizationManager.Localizer.Load;
 
 			ModConfig.Init(Config, _configSync);
 

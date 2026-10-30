@@ -46,7 +46,7 @@ namespace MarkOfOden.Patches
 				TMP_Text text = _standingsBtnObj.GetComponentInChildren<TMP_Text>();
 				if (text != null)
 				{
-					text.text = "Mark of Oden";
+					text.text = Words.T("$moo_tab");
 					text.fontSize = Mathf.Min(text.fontSize, 13f);
 				}
 

@@ -1,5 +1,28 @@
 ﻿# Changelog
 
+## 0.4.2
+
+### Added
+
+- **Translations.** Everything the mod shows players - the fear words over a creature's name, the
+  boss and notoriety pop-ups, the Standings window and its inventory tab - now comes from a
+  translation file, through [LocalizationManager](https://github.com/blaxxun-boop/LocalizationManager).
+  The mod follows the language set in the game and ships with every language the game offers, the
+  community translations included, except Abenaki: 35 in all. Translations other than English are
+  machine-made; corrections from native speakers are welcome. Anyone can add or correct a language by
+  dropping a `TheMarkOfOden.<Language>.yml` file into the BepInEx folder - see the README. Biome, boss
+  and creature names come from the game's own translations.
+- The fear words are a server setting, so they cannot carry each player's language. The default
+  English words are now recognised and shown in each player's own language; words a server admin has
+  typed in are still shown exactly as typed.
+
+### Changed
+
+- The `moo` console commands stay in English: they are tools for admins and testing.
+- The notoriety pop-up no longer makes an English plural of the creature's name ("Boars sense your
+  legend"), which could not be carried into other languages; it now reads "Every Boar senses your
+  legend and fears you more."
+
 ## 0.4.1
 
 ### Fixed

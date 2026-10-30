@@ -5,10 +5,25 @@
     <AssemblyName>MarkOfOden</AssemblyName>
     <RootNamespace>MarkOfOden</RootNamespace>
     <Product>The Mark of Oden</Product>
-    <Version>0.4.1</Version>
+    <Version>0.4.2</Version>
     <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
     <EnableDefaultCompileItems>true</EnableDefaultCompileItems>
+    <!-- Puts YamlDotNet.dll beside the build, where ILRepack picks it up to fold it in. -->
+    <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
   </PropertyGroup>
+
+  <!-- Translations, built into the DLL from the repository's translations folder. LocalizationManager
+       finds them by the end of the resource name: translations.<Language>.yml. -->
+  <ItemGroup>
+    <EmbeddedResource Include="..\..\translations\*.yml" LogicalName="MarkOfOden.translations.%(Filename)%(Extension)" />
+  </ItemGroup>
+
+  <!-- YamlDotNet reads the translation files. ILRepack folds it into MarkOfOden.dll, renamed
+       internal, so players install nothing extra and no other mod's copy clashes. -->
+  <ItemGroup>
+    <PackageReference Include="YamlDotNet" Version="16.3.0" />
+    <PackageReference Include="ILRepack.Lib.MSBuild.Task" Version="2.0.43" PrivateAssets="all" />
+  </ItemGroup>
 
   <ItemGroup>
     <!-- Publicizes the referenced game assembly at build time so we can touch

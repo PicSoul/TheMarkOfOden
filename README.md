@@ -224,6 +224,40 @@ Neither can raise it. `moo tier` can, so on a server it is limited to the admin.
 Opting out is remembered by the character, so it survives logging out, and your mark is kept for
 whenever you opt back in. On a shared world it only affects you: other players still get the full mod.
 
+## Translations
+
+The Mark of Oden follows the language set in the game, and changes the moment you change it. It ships
+with every language the game offers, the community translations included:
+
+English, Swedish, French, Italian, German, Spanish, Russian, Romanian, Bulgarian, Macedonian, Finnish,
+Danish, Norwegian, Icelandic, Turkish, Lithuanian, Czech, Hungarian, Slovak, Polish, Dutch, European
+and Brazilian Portuguese, Simplified and Traditional Chinese, Japanese, Korean, Hindi, Thai, Croatian,
+Georgian, Greek, Serbian, Ukrainian and Latvian.
+
+The translations other than English are machine-made, so corrections from native speakers are very
+welcome. Abenaki, which the game also offers, is left in English rather than guessed at. Biome, boss
+and creature names always come from the game's own translations. The `moo` console commands stay in
+English.
+
+To add a language or correct one, no rebuild is needed:
+
+1. Copy the [English file](https://github.com/PicSoul/TheMarkOfOden/blob/main/translations/English.yml).
+2. Name it `TheMarkOfOden.<Language>.yml`, using the game's name for the language - for example
+   `TheMarkOfOden.Italian.yml`.
+3. Translate the text on the right of each line, leaving the key on the left alone and keeping `$1`,
+   `$2` and so on where the mod fills in a value.
+4. Put it anywhere inside the `BepInEx` folder. A file there wins over the built-in translation, so it
+   also works for fixing one.
+
+Send it over as an issue or pull request on GitHub and it will ship with the next version.
+
+The fear words over a creature's name can also be set by a server in `Fear words`. The default English
+words are shown in each player's own language; anything typed there instead is shown exactly as
+typed, to everyone.
+
+Translations are handled by [LocalizationManager](https://github.com/blaxxun-boop/LocalizationManager)
+by blaxxun (MIT licence), the same system many Valheim mods use.
+
 ## Configuration
 
 Everything is tunable in the config file: when a creature leaves you alone, how much bolder creatures

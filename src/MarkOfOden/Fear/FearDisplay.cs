@@ -36,7 +36,12 @@ namespace MarkOfOden.Fear
 		// What the creature is about to do, not what it feels. "Afraid" is a state of mind and leaves
 		// you to work out the consequence; "fleeing" is the consequence, and is what you are actually
 		// looking at the plate to find out.
-		private static readonly string[] DefaultLabels = { "wary", "fleeing", "panicked", "cornered", "unafraid" };
+		private static readonly string[] DefaultLabels = { "wary", "fleeing", "panicked", "provoked", "unafraid" };
+
+		// The setting is synced from the server, so it cannot carry each player's language. Its
+		// English default is recognised word by word and shown in the player's own language instead;
+		// a word anyone actually typed in is shown exactly as typed.
+		private static readonly string[] LabelKeys = { "$moo_fear_wary", "$moo_fear_fleeing", "$moo_fear_panicked", "$moo_fear_provoked", "$moo_fear_unafraid" };
 
 		private sealed class Cached
 		{
@@ -209,17 +214,30 @@ namespace MarkOfOden.Fear
 					return Entry(Symbols, ModConfig.FearSymbols.Value, state, DefaultSymbols);
 
 				case NameplateStyle.Word:
-					return Entry(Labels, ModConfig.FearLabels.Value, state, DefaultLabels);
+					return Label(state);
 
 				default:
 					string marker = Entry(Symbols, ModConfig.FearSymbols.Value, state, DefaultSymbols);
-					string word = Entry(Labels, ModConfig.FearLabels.Value, state, DefaultLabels);
+					string word = Label(state);
 
 					if (marker.Length == 0) { return word; }
 					if (word.Length == 0) { return marker; }
 
 					return marker + " " + word;
 			}
+		}
+
+		/// <summary>The word for a state, in the player's language when it is the default English one.</summary>
+		private static string Label(int state)
+		{
+			string word = Entry(Labels, ModConfig.FearLabels.Value, state, DefaultLabels);
+			if (state >= 0 && state < DefaultLabels.Length
+				&& string.Equals(word, DefaultLabels[state], System.StringComparison.OrdinalIgnoreCase))
+			{
+				return Words.T(LabelKeys[state]);
+			}
+
+			return word;
 		}
 
 		/// <summary>Reads one comma separated entry, falling back to the built-in value.</summary>

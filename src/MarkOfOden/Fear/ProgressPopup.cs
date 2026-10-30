@@ -181,7 +181,7 @@ namespace MarkOfOden.Fear
 			titleRect.sizeDelta = Vector2.zero;
 			_titleText = titleObj.GetComponent<TMP_Text>();
 			if (font != null) _titleText.font = font;
-			_titleText.text = "« THE MARK OF ODEN »";
+			_titleText.text = "« " + Words.T("$moo_popup_title") + " »";
 			_titleText.fontSize = 13f;
 			_titleText.alignment = TextAlignmentOptions.Center;
 			_titleText.color = new Color(1f, 0.85f, 0.35f);
@@ -241,7 +241,7 @@ namespace MarkOfOden.Fear
 			headlineRect.sizeDelta = new Vector2(-118f, 26f);
 			_headlineText = headlineObj.GetComponent<TMP_Text>();
 			if (font != null) _headlineText.font = font;
-			_headlineText.text = "EIKTHYR SLAIN";
+			_headlineText.text = "";
 			_headlineText.fontSize = 18f;
 			_headlineText.alignment = TextAlignmentOptions.Left;
 			_headlineText.color = new Color(1f, 0.90f, 0.35f);
@@ -257,7 +257,7 @@ namespace MarkOfOden.Fear
 			sublineRect.sizeDelta = new Vector2(-118f, 22f);
 			_sublineText = sublineObj.GetComponent<TMP_Text>();
 			if (font != null) _sublineText.font = font;
-			_sublineText.text = "Mark Tier I Achieved";
+			_sublineText.text = "";
 			_sublineText.fontSize = 13f;
 			_sublineText.alignment = TextAlignmentOptions.Left;
 			_sublineText.color = new Color(0.95f, 0.95f, 0.95f);
@@ -273,7 +273,7 @@ namespace MarkOfOden.Fear
 			detailRect.sizeDelta = new Vector2(-118f, 22f);
 			_detailText = detailObj.GetComponent<TMP_Text>();
 			if (font != null) _detailText.font = font;
-			_detailText.text = "Meadows & Forest denizens grow wary of your presence.";
+			_detailText.text = "";
 			_detailText.fontSize = 11f;
 			_detailText.alignment = TextAlignmentOptions.Left;
 			_detailText.color = new Color(0.60f, 0.85f, 0.95f);
@@ -311,14 +311,15 @@ namespace MarkOfOden.Fear
 			string bossName = BiomeRegistry.BossDefaultName(bossNumber);
 			Heightmap.Biome biome = BiomeRegistry.BossBiome(bossNumber);
 			Sprite trophy = FindTrophySprite(bossName, bossNumber);
+			string shownName = BiomeRegistry.LocalizedBossName(bossNumber);
 
 			PopupData data = new PopupData
 			{
-				Title = "« THE MARK OF ODEN — BOSS SLAIN »",
+				Title = "« " + Words.T("$moo_popup_boss_title") + " »",
 				TitleColor = "#FFD700",
-				Headline = $"<b><color=#FFD700>{bossName.ToUpperInvariant()} SLAIN</color></b>",
-				Subline = $"Mark of Oden Tier {newTier} Achieved!",
-				Detail = $"Denizens of the {BiomeRegistry.BiomeName(biome)} grow cautious and fear your wrath.",
+				Headline = "<b><color=#FFD700>" + Words.T("$moo_popup_boss_headline", shownName.ToUpper()) + "</color></b>",
+				Subline = Words.T("$moo_popup_boss_subline", newTier.ToString()),
+				Detail = Words.T("$moo_popup_boss_detail", BiomeRegistry.LocalizedBiomeName(biome)),
 				Icon = trophy,
 				IsBoss = true
 			};
@@ -348,11 +349,11 @@ namespace MarkOfOden.Fear
 
 			PopupData data = new PopupData
 			{
-				Title = "« THE MARK OF ODEN — NOTORIETY INCREASED »",
+				Title = "« " + Words.T("$moo_popup_rank_title") + " »",
 				TitleColor = rankColor,
-				Headline = $"<b><color={rankColor}>{localizedName.ToUpperInvariant()}: RANK {rankRoman}</color></b>",
-				Subline = $"Slaughter Milestone Reached ({kills} Kills)",
-				Detail = $"Threat increased (+{newRank}). {localizedName}s sense your legend and are more afraid of you.",
+				Headline = $"<b><color={rankColor}>" + Words.T("$moo_popup_rank_headline", localizedName.ToUpper(), rankRoman) + "</color></b>",
+				Subline = Words.T("$moo_popup_rank_subline", kills.ToString()),
+				Detail = Words.T("$moo_popup_rank_detail", newRank.ToString(), localizedName),
 				Icon = icon,
 				IsBoss = false
 			};

@@ -208,6 +208,31 @@ namespace MarkOfOden.Marks
 			}
 		}
 
+		/// <summary>A biome's name in the player's language, from the game's own translations.</summary>
+		public static string LocalizedBiomeName(Heightmap.Biome biome)
+		{
+			string translated = Words.T(BiomeSector.GetBiomeName(biome));
+			return translated.StartsWith("[") ? BiomeName(biome) : translated;
+		}
+
+		/// <summary>A boss's name in the player's language, from the game's own translations.</summary>
+		public static string LocalizedBossName(int bossNumber)
+		{
+			foreach (System.Collections.Generic.KeyValuePair<string, int> pair in Fear.CreatureTiers.AllBossTokens)
+			{
+				if (pair.Value == bossNumber)
+				{
+					string translated = Words.T(pair.Key);
+					if (!translated.StartsWith("[") && !translated.StartsWith("$"))
+					{
+						return translated;
+					}
+				}
+			}
+
+			return BossDefaultName(bossNumber);
+		}
+
 		public static Heightmap.Biome BossBiome(int bossNumber)
 		{
 			switch (bossNumber)

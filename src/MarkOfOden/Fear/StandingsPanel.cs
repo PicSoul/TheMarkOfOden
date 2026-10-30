@@ -147,14 +147,17 @@ namespace MarkOfOden.Fear
 			GUILayout.BeginHorizontal();
 			GUILayout.Space(10f);
 			GUILayout.BeginVertical();
-			GUILayout.Label("<b><color=#F5D278>ᛟ   THE MARK OF ODEN — STANDINGS & LORE   ᛟ</color></b>", _heading);
+			GUILayout.Label("<b><color=#F5D278>ᛟ   " + Words.T("$moo_st_heading") + "   ᛟ</color></b>", _heading);
 
 			int tier = MarkLedger.Tier;
 			int totalBosses = MarkLedger.AllBossNumbers.Count;
 			int speciesCount = VanillaKillStats.SpeciesCount();
-			string optOutNotice = MarkLedger.OptedOut ? "  <color=#FFA500>[ Opted Out — Nothing Fears You ]</color>" : string.Empty;
+			string optOutNotice = MarkLedger.OptedOut ? "  <color=#FFA500>[ " + Words.T("$moo_st_optout") + " ]</color>" : string.Empty;
 
-			GUILayout.Label($"<color=#94A3B8>Mark Tier: <b><color=#FCD34D>{tier}</color></b> (Threat +{tier})  •  Boss Credits: <b><color=#FCD34D>{totalBosses}</color></b>  •  Species Tracked: <b><color=#FCD34D>{speciesCount}</color></b>{optOutNotice}</color>", _subHeading);
+			GUILayout.Label("<color=#94A3B8>" + Words.T("$moo_st_summary",
+				$"<b><color=#FCD34D>{tier}</color></b>", tier.ToString(),
+				$"<b><color=#FCD34D>{totalBosses}</color></b>", $"<b><color=#FCD34D>{speciesCount}</color></b>")
+				+ optOutNotice + "</color>", _subHeading);
 			GUILayout.EndVertical();
 
 			// Close Button
@@ -170,18 +173,18 @@ namespace MarkOfOden.Fear
 			// 2. Toolbar (Search & Controls)
 			GUILayout.BeginHorizontal(_toolbarBox);
 			GUILayout.Space(6f);
-			GUILayout.Label("<color=#FCD34D><b>Search:</b></color>", _searchLabel, GUILayout.Width(54f));
+			GUILayout.Label("<color=#FCD34D><b>" + Words.T("$moo_st_search") + "</b></color>", _searchLabel, GUILayout.ExpandWidth(false));
 			_searchFilter = GUILayout.TextField(_searchFilter, _searchField, GUILayout.Width(220f));
 			if (!string.IsNullOrEmpty(_searchFilter))
 			{
-				if (GUILayout.Button("Clear", _tabNormal, GUILayout.Width(50f), GUILayout.Height(22f)))
+				if (GUILayout.Button(Words.T("$moo_st_clear"), _tabNormal, GUILayout.ExpandWidth(false), GUILayout.Height(22f)))
 				{
 					_searchFilter = string.Empty;
 				}
 			}
 
 			GUILayout.FlexibleSpace();
-			GUILayout.Label("<color=#64748B>Drag header to reposition  •  Spoiler protection active</color>", _footerText);
+			GUILayout.Label("<color=#64748B>" + Words.T("$moo_st_hint") + "</color>", _footerText);
 			GUILayout.Space(8f);
 			GUILayout.EndHorizontal();
 
@@ -204,9 +207,9 @@ namespace MarkOfOden.Fear
 			// 5. Footer Bar
 			GUILayout.BeginHorizontal(_footerBox);
 			GUILayout.Space(8f);
-			GUILayout.Label($"Press <color=#FCD34D><b>{Key(ModConfig.StandingsKey)}</b></color> or <color=#FCD34D><b>Esc</b></color> to close", _footerText);
+			GUILayout.Label(Words.T("$moo_st_close", $"<color=#FCD34D><b>{Key(ModConfig.StandingsKey)}</b></color>", "<color=#FCD34D><b>Esc</b></color>"), _footerText);
 			GUILayout.FlexibleSpace();
-			GUILayout.Label("<color=#94A3B8>Kills advance your notoriety with that species, amplifying their terror.</color>", _footerText);
+			GUILayout.Label("<color=#94A3B8>" + Words.T("$moo_st_footer") + "</color>", _footerText);
 			GUILayout.Space(8f);
 			GUILayout.EndHorizontal();
 
@@ -223,7 +226,8 @@ namespace MarkOfOden.Fear
 			// "All Discovered" Tab
 			bool isAll = _selectedBiome == null;
 			GUIStyle allStyle = isAll ? _tabActive : _tabNormal;
-			string allLabel = isAll ? "<b><color=#FDE047>All Discovered</color></b>" : "<color=#CBD5E1>All Discovered</color>";
+			string allWords = Words.T("$moo_st_all");
+			string allLabel = isAll ? $"<b><color=#FDE047>{allWords}</color></b>" : $"<color=#CBD5E1>{allWords}</color>";
 			if (GUILayout.Button(allLabel, allStyle, GUILayout.Height(24f)))
 			{
 				_selectedBiome = null;
@@ -234,7 +238,7 @@ namespace MarkOfOden.Fear
 			{
 				bool isCurrent = _selectedBiome == b;
 				GUIStyle style = isCurrent ? _tabActive : _tabNormal;
-				string name = BiomeRegistry.BiomeName(b);
+				string name = BiomeRegistry.LocalizedBiomeName(b);
 				string label = isCurrent ? $"<b><color=#FDE047>{name}</color></b>" : $"<color=#CBD5E1>{name}</color>";
 				if (GUILayout.Button(label, style, GUILayout.Height(24f)))
 				{
@@ -248,7 +252,7 @@ namespace MarkOfOden.Fear
 
 		private static void DrawBossesSection()
 		{
-			SectionHeader("BOSSES & ANCIENT POWERS", "ᚦ");
+			SectionHeader(Words.T("$moo_st_bosses"), "ᚦ");
 
 			// Bosses 1 to 7
 			for (int bossNumber = 1; bossNumber <= 7; bossNumber++)
@@ -267,8 +271,8 @@ namespace MarkOfOden.Fear
 					continue;
 				}
 
-				string bossName = BiomeRegistry.BossDefaultName(bossNumber);
-				string biomeName = BiomeRegistry.BiomeName(biome);
+				string bossName = BiomeRegistry.LocalizedBossName(bossNumber);
+				string biomeName = BiomeRegistry.LocalizedBiomeName(biome);
 
 				// Search filter
 				if (!PassesSearch(bossName) && !PassesSearch(biomeName))
@@ -290,20 +294,22 @@ namespace MarkOfOden.Fear
 				string orderRoman = ToRoman(bossNumber);
 				GUILayout.BeginVertical(GUILayout.Width(260f));
 				GUILayout.Label($"<b><color=#FCD34D>{bossName}</color></b>  <size=11><color=#94A3B8>[{biomeName}]</color></size>", _itemTitle);
-				GUILayout.Label($"<size=11><color=#64748B>Ancient Hierarchy: Boss {orderRoman} (Tier {bossNumber})</color></size>", _itemSub);
+				GUILayout.Label("<size=11><color=#64748B>" + Words.T("$moo_st_boss_order", orderRoman, bossNumber.ToString()) + "</color></size>", _itemSub);
 				GUILayout.EndVertical();
 
 				// Status & Kills
 				GUILayout.BeginVertical();
 				if (slain)
 				{
-					GUILayout.Label($"<color=#4ADE80><b>✦ SLAIN / DEFEATED</b></color>  •  <color=#CBD5E1>{kills} lifetime kill{(kills == 1 ? "" : "s")}</color>", _badge);
-					GUILayout.Label("<size=11><color=#94A3B8>The mark of this boss is etched into your soul. Tier credited.</color></size>", _itemSub);
+					GUILayout.Label("<color=#4ADE80><b>✦ " + Words.T("$moo_st_slain") + "</b></color>  •  <color=#CBD5E1>"
+						+ Words.Count(kills, "$moo_lifetime_kills_one", "$moo_lifetime_kills_many") + "</color>", _badge);
+					GUILayout.Label("<size=11><color=#94A3B8>" + Words.T("$moo_st_slain_note") + "</color></size>", _itemSub);
 				}
 				else
 				{
-					GUILayout.Label($"<color=#F59E0B><b>⚔ UNDEFEATED</b></color>  •  <size=11><color=#94A3B8>Lurking within the {biomeName}</color></size>", _badge);
-					GUILayout.Label("<size=11><color=#64748B>Defeat this ancient ruler to advance your Mark tier.</color></size>", _itemSub);
+					GUILayout.Label("<color=#F59E0B><b>⚔ " + Words.T("$moo_st_undefeated") + "</b></color>  •  <size=11><color=#94A3B8>"
+						+ Words.T("$moo_st_lurking", biomeName) + "</color></size>", _badge);
+					GUILayout.Label("<size=11><color=#64748B>" + Words.T("$moo_st_undefeated_note") + "</color></size>", _itemSub);
 				}
 				GUILayout.EndVertical();
 
@@ -315,7 +321,7 @@ namespace MarkOfOden.Fear
 
 		private static void DrawCreaturesSection()
 		{
-			SectionHeader("CREATURES & NOTORIETY STANDINGS", "ᛉ");
+			SectionHeader(Words.T("$moo_st_creatures"), "ᛉ");
 
 			int markTier = MarkLedger.Tier;
 			int[] thresholds = ModConfig.ParseThresholds(ModConfig.NotorietyThresholds.Value);
@@ -438,15 +444,15 @@ namespace MarkOfOden.Fear
 				// Column 1: Creature Name & Biome
 				GUILayout.BeginVertical(GUILayout.Width(220f));
 				GUILayout.Label($"<b>{row.DisplayName}</b>", _itemTitle);
-				GUILayout.Label($"<size=11><color=#94A3B8>[{row.BiomeName}]  Base Tier {row.BaseTier}</color></size>", _itemSub);
+				GUILayout.Label($"<size=11><color=#94A3B8>[{row.BiomeName}]  " + Words.T("$moo_st_base_tier", row.BaseTier.ToString()) + "</color></size>", _itemSub);
 				GUILayout.EndVertical();
 
 				// Column 2: Kills & Notoriety Progress
 				GUILayout.BeginVertical(GUILayout.Width(240f));
 				string rankLabel = row.NotorietyRank > 0
-					? $"<color=#FCD34D><b>Rank {ToRoman(row.NotorietyRank)}</b></color> (+{row.NotorietyRank} Threat)"
-					: "<color=#94A3B8>Rank 0 (No notoriety)</color>";
-				GUILayout.Label($"{rankLabel}  •  <b>{row.Kills}</b> kill{(row.Kills == 1 ? "" : "s")}", _itemTitle);
+					? "<color=#FCD34D><b>" + Words.T("$moo_st_rank", ToRoman(row.NotorietyRank)) + "</b></color> " + Words.T("$moo_st_rank_threat", row.NotorietyRank.ToString())
+					: "<color=#94A3B8>" + Words.T("$moo_st_rank_none") + "</color>";
+				GUILayout.Label(rankLabel + "  •  " + Words.Count(row.Kills, "$moo_kills_one", "$moo_kills_many"), _itemTitle);
 				GUILayout.Label($"<size=11><color=#64748B>{row.ProgressText}</color></size>", _itemSub);
 				GUILayout.EndVertical();
 
@@ -466,7 +472,7 @@ namespace MarkOfOden.Fear
 				GUILayout.Space(20f);
 				GUILayout.BeginHorizontal();
 				GUILayout.FlexibleSpace();
-				GUILayout.Label("<color=#64748B>No creatures discovered yet in this category.</color>", _subHeading);
+				GUILayout.Label("<color=#64748B>" + Words.T("$moo_st_none_found") + "</color>", _subHeading);
 				GUILayout.FlexibleSpace();
 				GUILayout.EndHorizontal();
 			}
@@ -512,11 +518,11 @@ namespace MarkOfOden.Fear
 			if (nextThreshold > 0)
 			{
 				int toGo = nextThreshold - kills;
-				progress = $"Progress: {kills} / {nextThreshold} kills ({toGo} to next rank)";
+				progress = Words.T("$moo_st_progress", kills.ToString(), nextThreshold.ToString(), toGo.ToString());
 			}
 			else
 			{
-				progress = $"Max Notoriety Achieved ({kills} kills)";
+				progress = Words.T("$moo_st_max", kills.ToString());
 			}
 
 			// Judged by the same rules the creatures themselves use, rather than worked out again here.
@@ -533,44 +539,44 @@ namespace MarkOfOden.Fear
 			string ifProvoked;
 			if (hunted)
 			{
-				ifProvoked = "Provoked, it fights to the end: hunted animals never break.";
+				ifProvoked = Words.T("$moo_st_hunted");
 			}
 			else if (breakPoint > 0f && ModConfig.MoraleEnabled.Value)
 			{
-				ifProvoked = $"Provoked, it fights back, and breaks and runs below {breakPoint * 100f:0}% health.";
+				ifProvoked = Words.T("$moo_st_breaks", (breakPoint * 100f).ToString("0"));
 			}
 			else
 			{
-				ifProvoked = "Provoked, it fights to the end.";
+				ifProvoked = Words.T("$moo_st_fights");
 			}
 
-			string nightNote = night > 0f ? " Bolder now that it is night." : string.Empty;
+			string nightNote = night > 0f ? " " + Words.T("$moo_st_night") : string.Empty;
 
 			string badge;
 			string detail;
 
 			if (MarkLedger.OptedOut)
 			{
-				badge = "<color=#FFA500>▲ Normal (Player Opted Out)</color>";
-				detail = "Nothing fears you while opted out of The Mark of Oden.";
+				badge = "<color=#FFA500>▲ " + Words.T("$moo_st_optout_badge") + "</color>";
+				detail = Words.T("$moo_st_optout_detail");
 			}
 			else if (!CreatureTiers.IsArmedToken(token))
 			{
 				// Asked of the creature's own attacks rather than matched against a name. The check
 				// this replaces compared the token to "Deer", but tokens look like $enemy_deer, so it
 				// never matched anything.
-				badge = "<color=#94A3B8>○ Harmless Prey</color>";
-				detail = "Has no way to fight. Runs from everything, as it always has.";
+				badge = "<color=#94A3B8>○ " + Words.T("$moo_st_prey_badge") + "</color>";
+				detail = Words.T("$moo_st_prey_detail");
 			}
 			else if (leavesYouAlone)
 			{
-				badge = "<color=#9BD46A><b>▼ Wary (Leaves you alone)</b></color>";
-				detail = $"Threat exceeds courage by {delta:0}. Will not pick a fight with you. {ifProvoked}{nightNote}";
+				badge = "<color=#9BD46A><b>▼ " + Words.T("$moo_st_wary_badge") + "</b></color>";
+				detail = Words.T("$moo_st_wary_detail", delta.ToString("0")) + " " + ifProvoked + nightNote;
 			}
 			else
 			{
-				badge = "<color=#E8A33C>▲ Unafraid / Aggressive</color>";
-				detail = $"Courage ({baseTier + night:0}) withstands threat ({threat:0}). Attacks you on sight and fights to the end.{nightNote}";
+				badge = "<color=#E8A33C>▲ " + Words.T("$moo_st_unafraid_badge") + "</color>";
+				detail = Words.T("$moo_st_unafraid_detail", (baseTier + night).ToString("0"), threat.ToString("0")) + nightNote;
 			}
 
 			return new CreatureRowData
@@ -578,7 +584,7 @@ namespace MarkOfOden.Fear
 				Token = token,
 				DisplayName = localized,
 				Biome = biome,
-				BiomeName = BiomeRegistry.BiomeName(biome),
+				BiomeName = BiomeRegistry.LocalizedBiomeName(biome),
 				BaseTier = baseTier,
 				Kills = kills,
 				NotorietyRank = notoriety,
@@ -723,7 +729,7 @@ namespace MarkOfOden.Fear
 		{
 			if (entry == null || entry.Value.MainKey == KeyCode.None)
 			{
-				return "unbound";
+				return Words.T("$moo_st_unbound");
 			}
 
 			return entry.Value.MainKey.ToString();
